@@ -1,0 +1,53 @@
+name: dashboard
+description: "A new Flutter project."
+publish_to: "none"
+version: 1.0.0+1
+
+environment:
+  sdk: ">=3.0.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  table_calendar: ^3.2.1
+  shared:
+    path: ../../shared
+
+  # Core
+  flutter_riverpod: ^2.5.1
+  go_router: ^14.2.0
+  supabase_flutter: ^2.6.0
+  flutter_dotenv: ^5.1.0
+  shared_preferences: ^2.2.3
+
+  # Inventory Module B
+  image_picker: ^1.1.2
+  flutter_image_compress: ^2.3.0
+  http: ^1.2.1
+  csv: ^6.0.0
+  file_picker: ^8.0.7
+  pdf: ^3.11.0
+  printing: ^5.13.2
+  qr_flutter: ^4.1.0
+
+  # Charts & Localization
+  fl_chart: ^0.68.0
+  intl: ^0.20.2
+
+  cupertino_icons: ^1.0.8
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - .env
+    - assets/audi-logo.png
+    - assets/BMW.png
+    - assets/mercedes-logo.png
+    - assets/porshe-logo.png
+    - assets/TOYOTA.png
