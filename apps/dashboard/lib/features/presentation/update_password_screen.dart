@@ -74,17 +74,17 @@ class _UpdatePasswordScreenState extends ConsumerState<UpdatePasswordScreen> {
                 padding: const EdgeInsets.all(40),
                 decoration: BoxDecoration(
                   color: isDark
-                      ? Colors.white.withOpacity(0.08)
-                      : Colors.white.withOpacity(0.96),
+                      ? Colors.white.withValues(alpha: 0.08)
+                      : Colors.white.withValues(alpha: 0.96),
                   borderRadius: BorderRadius.circular(4),
                   border: Border.all(
                     color: isDark
-                        ? Colors.white.withOpacity(0.12)
+                        ? Colors.white.withValues(alpha: 0.12)
                         : palette.border,
                     width: 0.8,
                   ),
                   boxShadow: isDark ? [] : [
-                    BoxShadow(color: palette.shadowColor.withOpacity(0.10),
+                    BoxShadow(color: palette.shadowColor.withValues(alpha: 0.10),
                         blurRadius: 40, offset: const Offset(0, 16)),
                   ],
                 ),
@@ -99,7 +99,7 @@ class _UpdatePasswordScreenState extends ConsumerState<UpdatePasswordScreen> {
                         child: Container(
                           width: 52, height: 52,
                           decoration: BoxDecoration(
-                            color: palette.accent.withOpacity(0.14),
+                            color: palette.accent.withValues(alpha: 0.14),
                             shape: BoxShape.circle,
                           ),
                           child: Icon(
@@ -165,10 +165,10 @@ class _UpdatePasswordScreenState extends ConsumerState<UpdatePasswordScreen> {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 12, vertical: 10),
                           decoration: BoxDecoration(
-                            color: palette.error.withOpacity(0.08),
+                            color: palette.error.withValues(alpha: 0.08),
                             borderRadius: BorderRadius.circular(3),
                             border: Border.all(
-                                color: palette.error.withOpacity(0.30)),
+                                color: palette.error.withValues(alpha: 0.30)),
                           ),
                           child: Text(errorMsg,
                               style: AppTextStyles.caption.copyWith(
@@ -185,7 +185,7 @@ class _UpdatePasswordScreenState extends ConsumerState<UpdatePasswordScreen> {
                             backgroundColor: palette.accent,
                             foregroundColor: Colors.white,
                             disabledBackgroundColor:
-                                palette.accent.withOpacity(0.5),
+                                palette.accent.withValues(alpha: 0.5),
                             elevation: 0,
                             shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(3)),
@@ -243,7 +243,7 @@ class _PwField extends StatelessWidget {
           color: palette.textTertiary, fontSize: 13),
       filled: true,
       fillColor: isDark
-          ? Colors.white.withOpacity(0.05)
+          ? Colors.white.withValues(alpha: 0.05)
           : Colors.grey.shade50,
       suffixIcon: onToggle != null
           ? GestureDetector(
@@ -269,7 +269,7 @@ class _PwField extends StatelessWidget {
           borderSide: BorderSide(color: palette.accent, width: 1.4)),
       errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(3),
-          borderSide: BorderSide(color: palette.error.withOpacity(0.6))),
+          borderSide: BorderSide(color: palette.error.withValues(alpha: 0.6))),
     ),
   );
 }

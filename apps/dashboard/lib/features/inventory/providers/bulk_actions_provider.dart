@@ -60,9 +60,15 @@ class BulkActionNotifier extends Notifier<BulkActionState> {
 
     state = const BulkActionState(isProcessing: true);
     try {
-      await service.bulkDelete(selected);
-      ref.read(inventoryListProvider.notifier).removeCars(selected);
+      final deleted = await service.bulkDelete(selected);
+      ref.read(inventoryListProvider.notifier).removeCars(deleted);
       ref.read(bulkSelectionProvider.notifier).clear();
+      if (deleted.length < selected.length) {
+        state = BulkActionState(
+            errorMessage:
+                '${selected.length - deleted.length} vehicle(s) could not be deleted.');
+        return false;
+      }
       state = const BulkActionState();
       return true;
     } catch (e) {

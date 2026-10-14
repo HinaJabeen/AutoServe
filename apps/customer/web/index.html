@@ -32,7 +32,16 @@
 
   <title>customer</title>
   <link rel="manifest" href="manifest.json">
-  <script src="bundle.js"></script>
+  <!--
+    Required by the `passkeys_web` plugin (a transitive dependency pulled in
+    by supabase_flutter/gotrue's WebAuthn support — this app itself never
+    calls passkeys APIs, but the web plugin registers unconditionally at
+    Flutter boot and throws if this isn't present). The exact URL below is
+    hardcoded in the resolved passkeys_web 2.9.0 package source itself
+    (passkeys_web.dart), so it's version-matched to what's actually
+    installed, not a generic placeholder.
+  -->
+  <script src="https://github.com/corbado/flutter-passkeys/releases/download/2.4.0/bundle.js"></script>
 </head>
 
 <body>

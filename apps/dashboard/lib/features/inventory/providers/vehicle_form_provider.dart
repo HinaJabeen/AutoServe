@@ -3,7 +3,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 
-import 'package:dashboard/features/inventory/models/car_model.dart';
+import 'package:shared/shared.dart';
 import 'package:dashboard/features/inventory/providers/inventory_providers.dart';
 import 'package:dashboard/features/inventory/services/vin_decoder_service.dart';
 

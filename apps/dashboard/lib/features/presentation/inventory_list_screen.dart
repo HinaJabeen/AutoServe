@@ -3,8 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared/shared.dart';
-import 'package:dashboard/features/providers/overview_provider.dart' hide dealerVehiclesStreamProvider, dealerLeadsStreamProvider;
-import 'package:dashboard/features/providers/vehicle_provider.dart'; 
+import 'package:dashboard/features/providers/vehicle_provider.dart';
 import 'package:dashboard/features/presentation/add_vehicle_form.dart';
 import 'package:dashboard/features/presentation/widgets/vehicle_qr_code.dart';
 
@@ -76,7 +75,7 @@ class _Header extends StatelessWidget {
           icon: const Icon(Icons.add_rounded, size: 18),
           label: const Text('Add Vehicle'),
           style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.pastelPink,
+            backgroundColor: AppColors.ambientBlue,
             foregroundColor: AppColors.navyBackground,
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
             shape: RoundedRectangleBorder(
@@ -116,7 +115,7 @@ class _SearchFilterBar extends ConsumerWidget {
               hintStyle: AppTextStyles.body.copyWith(color: Colors.white24, fontSize: 13),
               prefixIcon: const Icon(Icons.search_rounded, color: Colors.white30, size: 18),
               filled: true,
-              fillColor: AppColors.navySurface.withOpacity(0.5),
+              fillColor: AppColors.navySurface.withValues(alpha: 0.5),
               contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(AppDimensions.radiusS),
@@ -128,7 +127,7 @@ class _SearchFilterBar extends ConsumerWidget {
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(AppDimensions.radiusS),
-                borderSide: const BorderSide(color: AppColors.pastelPink),
+                borderSide: const BorderSide(color: AppColors.ambientBlue),
               ),
             ),
           ),
@@ -166,16 +165,16 @@ class _FilterChip extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           decoration: BoxDecoration(
-            color: active ? AppColors.pastelPink.withOpacity(0.16) : AppColors.navySurface.withOpacity(0.5),
+            color: active ? AppColors.ambientBlue.withValues(alpha: 0.16) : AppColors.navySurface.withValues(alpha: 0.5),
             borderRadius: BorderRadius.circular(AppDimensions.radiusFull),
             border: Border.all(
-              color: active ? AppColors.pastelPink.withOpacity(0.5) : AppColors.navyBorder,
+              color: active ? AppColors.ambientBlue.withValues(alpha: 0.5) : AppColors.navyBorder,
             ),
           ),
           child: Text(
             label,
             style: AppTextStyles.caption.copyWith(
-              color: active ? AppColors.pastelPink : Colors.white54,
+              color: active ? AppColors.ambientBlue : Colors.white54,
               fontWeight: active ? FontWeight.w600 : FontWeight.w400,
               fontSize: 12,
             ),
@@ -225,20 +224,20 @@ class _InventoryTable extends ConsumerWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.navySurface.withOpacity(0.45),
+        color: AppColors.navySurface.withValues(alpha: 0.45),
         borderRadius: BorderRadius.circular(AppDimensions.radiusL),
-        border: Border.all(color: AppColors.navyBorder.withOpacity(0.7)),
+        border: Border.all(color: AppColors.navyBorder.withValues(alpha: 0.7)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           const _TableHeaderRow(),
-          Divider(color: AppColors.navyBorder.withOpacity(0.6), height: 1),
+          Divider(color: AppColors.navyBorder.withValues(alpha: 0.6), height: 1),
           Expanded(
             child: ListView.separated(
               itemCount: filtered.length,
               separatorBuilder: (_, __) => Divider(
-                color: AppColors.navyBorder.withOpacity(0.35),
+                color: AppColors.navyBorder.withValues(alpha: 0.35),
                 height: 1,
               ),
               itemBuilder: (context, i) => _VehicleRow(vehicle: filtered[i]),
@@ -299,7 +298,7 @@ class _VehicleRow extends ConsumerWidget {
             width: _colThumb,
             height: _colThumb,
             decoration: BoxDecoration(
-              color: AppColors.navyBorder.withOpacity(0.5),
+              color: AppColors.navyBorder.withValues(alpha: 0.5),
               borderRadius: BorderRadius.circular(AppDimensions.radiusS),
             ),
             child: const Icon(Icons.directions_car_rounded, color: Colors.white24, size: 22),
@@ -362,7 +361,7 @@ class _VehicleRow extends ConsumerWidget {
                       : () => _confirmMarkSold(context, ref, vehicle),
                 ),
                 IconButton(
-                  icon: Icon(Icons.qr_code_rounded, size: 17, color: AppColors.pastelPink.withOpacity(0.85)),
+                  icon: Icon(Icons.qr_code_rounded, size: 17, color: AppColors.ambientBlue.withValues(alpha: 0.85)),
                   tooltip: 'View QR — link to customer app',
                   onPressed: () => showDialog(
                     context: context,
@@ -421,9 +420,9 @@ class _StatusBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: _color.withOpacity(0.14),
+        color: _color.withValues(alpha: 0.14),
         borderRadius: BorderRadius.circular(AppDimensions.radiusFull),
-        border: Border.all(color: _color.withOpacity(0.4)),
+        border: Border.all(color: _color.withValues(alpha: 0.4)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -471,7 +470,7 @@ class _ConfirmDialog extends StatelessWidget {
         width: 380,
         padding: const EdgeInsets.all(AppDimensions.paddingL),
         decoration: BoxDecoration(
-          color: AppColors.navySurface.withOpacity(0.97),
+          color: AppColors.navySurface.withValues(alpha: 0.97),
           borderRadius: BorderRadius.circular(AppDimensions.radiusL),
           border: Border.all(color: AppColors.navyBorder),
         ),
@@ -494,7 +493,7 @@ class _ConfirmDialog extends StatelessWidget {
                 ElevatedButton(
                   onPressed: () => Navigator.of(context).pop(true),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.pastelPink,
+                    backgroundColor: AppColors.ambientBlue,
                     foregroundColor: AppColors.navyBackground,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(AppDimensions.radiusS),
@@ -544,7 +543,7 @@ class _EmptyState extends StatelessWidget {
             icon: const Icon(Icons.add_rounded, size: 18),
             label: const Text('Add Vehicle'),
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.pastelPink,
+              backgroundColor: AppColors.ambientBlue,
               foregroundColor: AppColors.navyBackground,
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
               shape: RoundedRectangleBorder(
@@ -600,7 +599,7 @@ class _TableSkeletonState extends State<_TableSkeleton> with SingleTickerProvide
               child: Container(
                 height: 56,
                 decoration: BoxDecoration(
-                  color: AppColors.navySurface.withOpacity(_pulse.value),
+                  color: AppColors.navySurface.withValues(alpha: _pulse.value),
                   borderRadius: BorderRadius.circular(AppDimensions.radiusS),
                 ),
               ),
@@ -635,8 +634,8 @@ class _ErrorState extends StatelessWidget {
           const SizedBox(height: AppDimensions.paddingM),
           TextButton.icon(
             onPressed: onRetry,
-            icon: const Icon(Icons.refresh_rounded, size: 16, color: AppColors.pastelPink),
-            label: Text('Retry', style: AppTextStyles.body.copyWith(color: AppColors.pastelPink)),
+            icon: const Icon(Icons.refresh_rounded, size: 16, color: AppColors.ambientBlue),
+            label: Text('Retry', style: AppTextStyles.body.copyWith(color: AppColors.ambientBlue)),
           ),
         ],
       ),

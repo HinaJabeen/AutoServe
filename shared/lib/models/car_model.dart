@@ -1,7 +1,12 @@
-// lib/features/inventory/models/car_model.dart
-// FIXED: fromJson uses safe null-coercing casts throughout.
-// Hard cast `as String` replaced with `.toString()` or `?.toString()`
-// so a null/int field from Supabase can never cause a white-screen crash.
+// shared/lib/models/car_model.dart
+// Promoted from apps/dashboard/lib/features/inventory/models/car_model.dart
+// so apps/customer (the "Tinder for Cars" swipe deck) can read the same
+// `cars` rows the dashboard's inventory manager writes — see
+// docs/architecture.md §8.2.
+//
+// fromJson uses safe null-coercing casts throughout: hard casts like
+// `as String` are replaced with `.toString()`/`?.toString()` so a null/int
+// field from Supabase can never cause a white-screen crash.
 
 class CarModel {
   const CarModel({

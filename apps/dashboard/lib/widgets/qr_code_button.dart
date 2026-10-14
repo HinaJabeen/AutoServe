@@ -5,6 +5,7 @@ import 'package:shared/shared.dart';
 
 class QRCodeButton extends StatelessWidget {
   const QRCodeButton({
+    super.key,
     required this.vehicleId,
     required this.vehicleName,
   });

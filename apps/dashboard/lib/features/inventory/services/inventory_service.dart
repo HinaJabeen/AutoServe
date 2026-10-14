@@ -1,7 +1,7 @@
 // lib/features/inventory/services/inventory_service.dart
 
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:dashboard/features/inventory/models/car_model.dart';
+import 'package:shared/shared.dart';
 
 class InventoryException implements Exception {
   InventoryException(this.message);
@@ -95,14 +95,29 @@ class InventoryService {
     }
   }
 
-  /// Returns true on success, false on failure — never throws to the caller.
-  Future<bool> deleteCar(String carId) async {
+  /// Deletes the car and its photos. Throws [InventoryException] if the
+  /// delete didn't actually happen — including the case where Supabase
+  /// returns no error at all: an RLS policy that filters out the row (e.g.
+  /// a stale `dealer_id`, or the staff membership isn't `active`) makes the
+  /// DELETE match zero rows silently, with no PostgrestException thrown, so
+  /// we explicitly check the affected row count via `.select()` instead of
+  /// trusting a successful call to mean a row was removed.
+  Future<void> deleteCar(String carId) async {
     try {
       await _client.from('car_photos').delete().eq('car_id', carId);
-      await _client.from('cars').delete().eq('id', carId).eq('dealer_id', _dealerId);
-      return true;
-    } catch (_) {
-      return false;
+      final deleted = await _client
+          .from('cars')
+          .delete()
+          .eq('id', carId)
+          .eq('dealer_id', _dealerId)
+          .select('id');
+      if (deleted.isEmpty) {
+        throw InventoryException(
+            'Vehicle was not deleted — it may no longer belong to your '
+            'dealership, or you may not have permission to remove it.');
+      }
+    } on PostgrestException catch (e) {
+      throw InventoryException('Could not delete vehicle: ${e.message}');
     }
   }
 
@@ -119,14 +134,22 @@ class InventoryService {
     }
   }
 
-  Future<bool> bulkDelete(Set<String> carIds) async {
-    if (carIds.isEmpty) return true;
+  /// Returns the ids actually deleted — may be a subset of [carIds] if RLS
+  /// silently filtered some rows out (see [deleteCar] for why that doesn't
+  /// throw on its own).
+  Future<Set<String>> bulkDelete(Set<String> carIds) async {
+    if (carIds.isEmpty) return const {};
     try {
       await _client.from('car_photos').delete().inFilter('car_id', carIds.toList());
-      await _client.from('cars').delete().eq('dealer_id', _dealerId).inFilter('id', carIds.toList());
-      return true;
-    } catch (_) {
-      return false;
+      final deleted = await _client
+          .from('cars')
+          .delete()
+          .eq('dealer_id', _dealerId)
+          .inFilter('id', carIds.toList())
+          .select('id');
+      return deleted.map((r) => r['id'] as String).toSet();
+    } on PostgrestException catch (e) {
+      throw InventoryException('Bulk delete failed: ${e.message}');
     }
   }
 

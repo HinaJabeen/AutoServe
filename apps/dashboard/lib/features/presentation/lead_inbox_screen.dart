@@ -91,9 +91,21 @@ class _LeadInboxScreenState extends ConsumerState<LeadInboxScreen> {
     final p             = context.palette;
     final isDark        = Theme.of(context).brightness == Brightness.dark;
 
-    final vehiclesById = <String, dynamic>{};
-    for (final v in vehiclesAsync.value ?? []) {
-      vehiclesById[v.id as String] = v;
+    // Surface a failed drag-and-drop stage update — the card silently stays
+    // in its old column otherwise (the leads stream is the source of truth,
+    // so a failed write just never moves it), with no indication why.
+    ref.listen<LeadMutationState>(leadNotifierProvider, (previous, next) {
+      if (next.errorMessage != null && next.errorMessage != previous?.errorMessage) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not update lead: ${next.errorMessage}')),
+        );
+      }
+    });
+
+    final vehiclesById = <String, CarModel>{};
+    for (final raw in vehiclesAsync.value ?? []) {
+      final v = CarModel.fromJson(Map<String, dynamic>.from(raw));
+      vehiclesById[v.id] = v;
     }
 
     return Column(
@@ -299,8 +311,8 @@ class _KanbanColumn extends StatelessWidget {
           duration: const Duration(milliseconds: 160),
           decoration: BoxDecoration(
             color: accepting
-                ? p.accent.withOpacity(0.06)
-                : p.surface.withOpacity(0.5),
+                ? p.accent.withValues(alpha: 0.06)
+                : p.surface.withValues(alpha: 0.5),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
               color: accepting ? p.accent : p.border,
@@ -329,9 +341,9 @@ class _KanbanColumn extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                     decoration: BoxDecoration(
-                      color: p.accent.withOpacity(0.14),
+                      color: p.accent.withValues(alpha: 0.14),
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: p.accent.withOpacity(0.3)),
+                      border: Border.all(color: p.accent.withValues(alpha: 0.3)),
                     ),
                     child: Text('${leads.length}',
                         style: AppTextStyles.caption.copyWith(
@@ -428,7 +440,7 @@ class _LeadCard extends StatelessWidget {
         border: Border.all(color: p.border),
         boxShadow: [
           BoxShadow(
-            color: p.shadowColor.withOpacity(isDark ? 0.3 : 0.06),
+            color: p.shadowColor.withValues(alpha: isDark ? 0.3 : 0.06),
             blurRadius: 8, offset: const Offset(0, 2),
           ),
         ],
@@ -444,7 +456,7 @@ class _LeadCard extends StatelessWidget {
               decoration: BoxDecoration(
                 color: p.badgeBackground,
                 shape: BoxShape.circle,
-                border: Border.all(color: p.accent.withOpacity(0.3)),
+                border: Border.all(color: p.accent.withValues(alpha: 0.3)),
               ),
               child: Center(
                 child: Text(initials,
@@ -472,9 +484,9 @@ class _LeadCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
             decoration: BoxDecoration(
-              color: p.accent.withOpacity(0.08),
+              color: p.accent.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: p.accent.withOpacity(0.2)),
+              border: Border.all(color: p.accent.withValues(alpha: 0.2)),
             ),
             child: Row(mainAxisSize: MainAxisSize.min, children: [
               Icon(Icons.directions_car_outlined, size: 11, color: p.accent),
@@ -516,10 +528,12 @@ class _LeadCard extends StatelessWidget {
       ),
     );
 
-    return LongPressDraggable<LeadModel>(
+    // Plain Draggable (not LongPressDraggable): this board is mouse-driven on
+    // a web dashboard, so drags should start on press-and-move immediately
+    // rather than waiting out a touch-oriented long-press delay.
+    return Draggable<LeadModel>(
       key: ValueKey('drag_${lead.id}'),
       data: lead,
-      delay: const Duration(milliseconds: 200),
       feedback: Material(
         color: Colors.transparent,
         child: SizedBox(
@@ -563,7 +577,7 @@ class _LeadDetailDialog extends ConsumerWidget {
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: p.border),
           boxShadow: [
-            BoxShadow(color: p.shadowColor.withOpacity(0.35),
+            BoxShadow(color: p.shadowColor.withValues(alpha: 0.35),
                 blurRadius: 40, offset: const Offset(0, 16)),
           ],
         ),
@@ -633,12 +647,12 @@ class _LeadDetailDialog extends ConsumerWidget {
                           horizontal: 12, vertical: 7),
                       decoration: BoxDecoration(
                         color: isCurrent
-                            ? p.accent.withOpacity(0.16)
+                            ? p.accent.withValues(alpha: 0.16)
                             : p.surface,
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
                             color: isCurrent
-                                ? p.accent.withOpacity(0.5)
+                                ? p.accent.withValues(alpha: 0.5)
                                 : p.border),
                       ),
                       child: Text(e.value,
@@ -700,12 +714,3 @@ class _ErrorState extends StatelessWidget {
     ]),
   );
 }
-
-const _allStatusLabels = {
-  'new':                  'New',
-  'contacted':            'Contacted',
-  'test_drive_scheduled': 'Test Drive',
-  'negotiating':          'Negotiating',
-  'closed_won':           'Closed Won',
-  'closed_lost':          'Closed Lost',
-};

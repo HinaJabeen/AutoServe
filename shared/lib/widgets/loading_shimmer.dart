@@ -49,7 +49,7 @@ class VehicleGridShimmer extends StatelessWidget {
         crossAxisSpacing: AppDimensions.paddingM,
         childAspectRatio: 0.75,
       ),
-      itemBuilder: (_, __) => const LoadingShimmer(height: 220),
+      itemBuilder: (_, _) => const LoadingShimmer(height: 220),
     );
   }
 }

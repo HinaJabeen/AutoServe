@@ -38,7 +38,7 @@ class ProfileSettingsScreen extends ConsumerWidget {
               border: Border.all(color: palette.border),
               boxShadow: [
                 BoxShadow(
-                  color: palette.shadowColor.withOpacity(isDark ? 0.35 : 0.06),
+                  color: palette.shadowColor.withValues(alpha: isDark ? 0.35 : 0.06),
                   blurRadius: 24, offset: const Offset(0, 8),
                 ),
               ],
@@ -53,18 +53,18 @@ class ProfileSettingsScreen extends ConsumerWidget {
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
                           colors: [
-                            AppColors.pastelPink.withOpacity(0.22),
-                            AppColors.pastelPinkDeep.withOpacity(0.14),
+                            AppColors.ambientBlue.withValues(alpha: 0.22),
+                            AppColors.ambientBlueDeep.withValues(alpha: 0.14),
                           ],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                         ),
                         shape: BoxShape.circle,
                         border: Border.all(
-                            color: AppColors.pastelPink.withOpacity(0.35)),
+                            color: AppColors.ambientBlue.withValues(alpha: 0.35)),
                         boxShadow: [
                           BoxShadow(
-                            color: AppColors.pastelPink.withOpacity(0.25),
+                            color: AppColors.ambientBlue.withValues(alpha: 0.25),
                             blurRadius: 16, spreadRadius: -4,
                           ),
                         ],
@@ -75,7 +75,7 @@ class ProfileSettingsScreen extends ConsumerWidget {
                               ? displayName[0].toUpperCase()
                               : '?',
                           style: AppTextStyles.heading2.copyWith(
-                              color: AppColors.pastelPink, fontSize: 22),
+                              color: AppColors.ambientBlue, fontSize: 22),
                         ),
                       ),
                     ),
@@ -155,12 +155,12 @@ class _RoleBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
       decoration: BoxDecoration(
-        color: AppColors.pastelPink.withOpacity(0.12),
+        color: AppColors.ambientBlue.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(AppDimensions.radiusFull),
-        border: Border.all(color: AppColors.pastelPink.withOpacity(0.35)),
+        border: Border.all(color: AppColors.ambientBlue.withValues(alpha: 0.35)),
         boxShadow: [
           BoxShadow(
-            color: AppColors.pastelPink.withOpacity(0.15),
+            color: AppColors.ambientBlue.withValues(alpha: 0.15),
             blurRadius: 8, spreadRadius: -2,
           ),
         ],
@@ -168,7 +168,7 @@ class _RoleBadge extends StatelessWidget {
       child: Text(
         _label(role),
         style: AppTextStyles.caption.copyWith(
-          color: AppColors.pastelPink,
+          color: AppColors.ambientBlue,
           fontSize: 11, fontWeight: FontWeight.w600,
         ),
       ),

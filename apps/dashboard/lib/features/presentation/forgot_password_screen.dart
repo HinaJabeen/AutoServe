@@ -74,8 +74,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                 center: Alignment.center,
                 radius: 1.0,
                 colors: [
-                  const Color(0xFF0A0A0A).withOpacity(0.10),
-                  const Color(0xFF0A0A0A).withOpacity(0.82),
+                  const Color(0xFF0A0A0A).withValues(alpha: 0.10),
+                  const Color(0xFF0A0A0A).withValues(alpha: 0.82),
                 ],
               ),
             ),
@@ -89,9 +89,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                   width: 400,
                   padding: const EdgeInsets.fromLTRB(40, 40, 40, 36),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.08),
+                    color: Colors.white.withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(3),
-                    border: Border.all(color: Colors.white.withOpacity(0.12), width: 0.8),
+                    border: Border.all(color: Colors.white.withValues(alpha: 0.12), width: 0.8),
                   ),
                   child: _status == _SendStatus.sent ? _buildSentState() : _buildFormState(),
                 ),
@@ -128,7 +128,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           Text(
             'Email address',
             style: AppTextStyles.caption.copyWith(
-              color: Colors.white.withOpacity(0.32),
+              color: Colors.white.withValues(alpha: 0.32),
               fontSize: 11,
               fontWeight: FontWeight.w500,
             ),
@@ -137,7 +137,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           TextFormField(
             controller: _emailCtrl,
             keyboardType: TextInputType.emailAddress,
-            style: AppTextStyles.body.copyWith(color: Colors.white.withOpacity(0.85), fontSize: 13),
+            style: AppTextStyles.body.copyWith(color: Colors.white.withValues(alpha: 0.85), fontSize: 13),
             validator: (v) {
               if (v == null || v.trim().isEmpty) return 'Required';
               if (!v.contains('@')) return 'Enter a valid email';
@@ -145,21 +145,21 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
             },
             decoration: InputDecoration(
               hintText: 'you@dealership.com',
-              hintStyle: AppTextStyles.body.copyWith(color: Colors.white.withOpacity(0.14), fontSize: 13),
+              hintStyle: AppTextStyles.body.copyWith(color: Colors.white.withValues(alpha: 0.14), fontSize: 13),
               filled: true,
-              fillColor: Colors.white.withOpacity(0.04),
+              fillColor: Colors.white.withValues(alpha: 0.04),
               contentPadding: const EdgeInsets.symmetric(horizontal: 13, vertical: 12),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(3),
-                borderSide: BorderSide(color: Colors.white.withOpacity(0.08)),
+                borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(3),
-                borderSide: BorderSide(color: Colors.white.withOpacity(0.08)),
+                borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(3),
-                borderSide: BorderSide(color: Colors.white.withOpacity(0.30)),
+                borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.30)),
               ),
             ),
           ),
@@ -169,13 +169,13 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               decoration: BoxDecoration(
-                color: AppColors.error.withOpacity(0.07),
+                color: AppColors.error.withValues(alpha: 0.07),
                 borderRadius: BorderRadius.circular(3),
-                border: Border.all(color: AppColors.error.withOpacity(0.22)),
+                border: Border.all(color: AppColors.error.withValues(alpha: 0.22)),
               ),
               child: Text(
                 _errorMessage!,
-                style: AppTextStyles.caption.copyWith(color: AppColors.error.withOpacity(0.85), fontSize: 11),
+                style: AppTextStyles.caption.copyWith(color: AppColors.error.withValues(alpha: 0.85), fontSize: 11),
               ),
             ),
           ],
@@ -191,9 +191,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                 onTap: _status == _SendStatus.sending ? null : _submit,
                 child: Ink(
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.09),
+                    color: Colors.white.withValues(alpha: 0.09),
                     borderRadius: BorderRadius.circular(3),
-                    border: Border.all(color: Colors.white.withOpacity(0.10)),
+                    border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
                   ),
                   child: Center(
                     child: _status == _SendStatus.sending
@@ -202,13 +202,13 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                             height: 15,
                             child: CircularProgressIndicator(
                               strokeWidth: 1.5,
-                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white.withOpacity(0.35)),
+                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white.withValues(alpha: 0.35)),
                             ),
                           )
                         : Text(
                             'Send reset link',
                             style: AppTextStyles.body.copyWith(
-                              color: Colors.white.withOpacity(0.80),
+                              color: Colors.white.withValues(alpha: 0.80),
                               fontSize: 13,
                               fontWeight: FontWeight.w500,
                             ),
@@ -225,7 +225,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
               onTap: () => context.go('/login'),
               child: Text(
                 'Back to sign in',
-                style: AppTextStyles.caption.copyWith(color: Colors.white.withOpacity(0.30), fontSize: 12),
+                style: AppTextStyles.caption.copyWith(color: Colors.white.withValues(alpha: 0.30), fontSize: 12),
               ),
             ),
           ),
@@ -238,7 +238,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(Icons.mark_email_read_outlined, color: Colors.white.withOpacity(0.6), size: 32),
+        Icon(Icons.mark_email_read_outlined, color: Colors.white.withValues(alpha: 0.6), size: 32),
         const SizedBox(height: 16),
         Text(
           'Check your email',
@@ -263,7 +263,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 class _DotGridPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()..color = Colors.white.withOpacity(0.022);
+    final paint = Paint()..color = Colors.white.withValues(alpha: 0.022);
     const spacing = 36.0;
     for (double x = 0; x < size.width; x += spacing) {
       for (double y = 0; y < size.height; y += spacing) {

@@ -3,7 +3,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import 'package:dashboard/features/inventory/models/car_model.dart';
+import 'package:shared/shared.dart';
 import 'package:dashboard/features/inventory/services/inventory_service.dart';
 import 'package:dashboard/features/inventory/services/vehicle_storage_service.dart';
 import 'package:dashboard/features/providers/auth_provider.dart';
@@ -163,6 +163,19 @@ class InventoryListNotifier extends AsyncNotifier<InventoryPageState> {
     state = AsyncValue.data(current.copyWith(
       cars: [for (final c in current.cars) if (c.id == updated.id) updated else c],
     ));
+  }
+
+  /// Deletes [carId] via the service and, only once that succeeds, removes
+  /// it from the in-memory page. Throws on failure — the caller is expected
+  /// to catch it and show the error, and the car stays in the list since
+  /// nothing changed server-side.
+  Future<void> deleteCar(String carId) async {
+    final service = _service;
+    if (service == null) {
+      throw InventoryException('Not signed in to a dealership.');
+    }
+    await service.deleteCar(carId);
+    removeCars({carId});
   }
 
   /// Safe remove: guards against empty list and out-of-bounds.

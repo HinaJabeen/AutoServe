@@ -54,11 +54,11 @@ class _AmbientGlow extends StatelessWidget {
       child: Stack(children: [
         Positioned(
           top: -140, right: -100,
-          child: _GlowBlob(size: 380, color: p.accent.withOpacity(0.07)),
+          child: _GlowBlob(size: 380, color: p.accent.withValues(alpha: 0.07)),
         ),
         Positioned(
           bottom: -160, left: 120,
-          child: _GlowBlob(size: 320, color: p.accentSecondary.withOpacity(0.05)),
+          child: _GlowBlob(size: 320, color: p.accentSecondary.withValues(alpha: 0.05)),
         ),
       ]),
     );
@@ -99,11 +99,11 @@ class _Sidebar extends ConsumerWidget {
           filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
           child: Container(
             decoration: BoxDecoration(
-              color: p.surface.withOpacity(isDark ? 0.92 : 0.95),
+              color: p.surface.withValues(alpha: isDark ? 0.92 : 0.95),
               border: Border(right: BorderSide(color: p.border)),
               boxShadow: [
                 BoxShadow(
-                  color: p.shadowColor.withOpacity(0.3),
+                  color: p.shadowColor.withValues(alpha: 0.3),
                   blurRadius: 24, offset: const Offset(4, 0),
                 ),
               ],
@@ -163,7 +163,7 @@ class _BrandHeader extends StatelessWidget {
                 )),
             Text('Dealer OS',
                 style: AppTextStyles.caption.copyWith(
-                  color: p.accent.withOpacity(0.7),
+                  color: p.accent.withValues(alpha: 0.7),
                   fontSize: 9,
                   letterSpacing: 1.6,
                 )),
@@ -257,7 +257,7 @@ class _DealerRow extends ConsumerWidget {
             Text(dealer?.name ?? '—',
                 maxLines: 1, overflow: TextOverflow.ellipsis,
                 style: AppTextStyles.bodyBold.copyWith(
-                    color: p.textPrimary.withOpacity(0.92), fontSize: 12.5)),
+                    color: p.textPrimary.withValues(alpha: 0.92), fontSize: 12.5)),
             Text(staffName,
                 maxLines: 1, overflow: TextOverflow.ellipsis,
                 style: AppTextStyles.caption.copyWith(
@@ -280,9 +280,9 @@ class _DealerAvatar extends StatelessWidget {
     return Container(
       width: 34, height: 34,
       decoration: BoxDecoration(
-        color: accent.withOpacity(0.14),
+        color: accent.withValues(alpha: 0.14),
         borderRadius: BorderRadius.circular(AppDimensions.radiusS),
-        border: Border.all(color: accent.withOpacity(0.3)),
+        border: Border.all(color: accent.withValues(alpha: 0.3)),
       ),
       clipBehavior: Clip.antiAlias,
       child: (logoUrl != null && logoUrl!.isNotEmpty)
@@ -310,7 +310,7 @@ class _NotificationBell extends ConsumerWidget {
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           boxShadow: hasUnread
-              ? [BoxShadow(color: p.accent.withOpacity(0.4),
+              ? [BoxShadow(color: p.accent.withValues(alpha: 0.4),
                   blurRadius: 14, spreadRadius: 1)]
               : [],
         ),
@@ -323,7 +323,7 @@ class _NotificationBell extends ConsumerWidget {
           tooltip: 'Notifications',
           onPressed: () {
             context.go(AppRoutes.leads);
-            ref.read(unreadLeadCountProvider.notifier).state = 0;
+            ref.read(unreadLeadCountProvider.notifier).clear();
           },
         ),
       ),
@@ -337,7 +337,7 @@ class _NotificationBell extends ConsumerWidget {
               color: p.accent,
               borderRadius: BorderRadius.circular(AppDimensions.radiusFull),
               boxShadow: [BoxShadow(
-                  color: p.accent.withOpacity(0.7), blurRadius: 6)],
+                  color: p.accent.withValues(alpha: 0.7), blurRadius: 6)],
             ),
             child: Center(
               child: Text(count > 9 ? '9+' : '$count',
@@ -371,19 +371,19 @@ class _NavItem extends StatelessWidget {
         color: Colors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(AppDimensions.radiusM),
-          hoverColor: p.accent.withOpacity(0.06),
+          hoverColor: p.accent.withValues(alpha: 0.06),
           onTap: () => context.go(route),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 180),
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
             decoration: BoxDecoration(
-              color: active ? p.accent.withOpacity(0.12) : Colors.transparent,
+              color: active ? p.accent.withValues(alpha: 0.12) : Colors.transparent,
               borderRadius: BorderRadius.circular(AppDimensions.radiusM),
               border: active
-                  ? Border.all(color: p.accent.withOpacity(0.25))
+                  ? Border.all(color: p.accent.withValues(alpha: 0.25))
                   : Border.all(color: Colors.transparent),
               boxShadow: active
-                  ? [BoxShadow(color: p.accent.withOpacity(0.15),
+                  ? [BoxShadow(color: p.accent.withValues(alpha: 0.15),
                       blurRadius: 16, spreadRadius: -4)]
                   : [],
             ),
@@ -426,7 +426,7 @@ class _ThemeToggleTile extends ConsumerWidget {
         color: Colors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(AppDimensions.radiusM),
-          hoverColor: p.accent.withOpacity(0.06),
+          hoverColor: p.accent.withValues(alpha: 0.06),
           onTap: () => ref.read(themeProvider.notifier).toggle(),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
@@ -466,7 +466,7 @@ class _SignOutTile extends ConsumerWidget {
         color: Colors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(AppDimensions.radiusM),
-          hoverColor: p.error.withOpacity(0.08),
+          hoverColor: p.error.withValues(alpha: 0.08),
           onTap: loading ? null : () => ref.read(authProvider.notifier).signOut(),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),

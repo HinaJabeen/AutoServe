@@ -4,11 +4,16 @@
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
-import 'package:qr_flutter/qr_flutter.dart' show QrPainter, QrVersions, QrErrorCorrectLevel;
-import 'package:flutter/rendering.dart';
+import 'package:qr_flutter/qr_flutter.dart'
+    show
+        QrPainter,
+        QrVersions,
+        QrErrorCorrectLevel,
+        QrEyeStyle,
+        QrDataModuleStyle;
 import 'dart:ui' as ui;
 import 'dart:typed_data';
-import 'package:dashboard/features/inventory/models/car_model.dart';
+import 'package:shared/shared.dart';
 
 class WindowStickerPdfService {
   const WindowStickerPdfService();
@@ -16,15 +21,25 @@ class WindowStickerPdfService {
   /// Renders the given [carDetailUrl] (deep link to the customer-app listing)
   /// as a PNG so it can be embedded in the PDF.
   /// QrVersions.auto allows any length URL without throwing QrInputTooLongException.
+  /// `color`/`emptyColor` are deprecated on QrPainter, so the background is
+  /// painted manually and the module color comes from eyeStyle/dataModuleStyle.
   Future<Uint8List> _renderQr(String data) async {
     final painter = QrPainter(
       data: data,
       version: QrVersions.auto,  // ← FIX: auto-scales to fit URL length
       errorCorrectionLevel: QrErrorCorrectLevel.M,
-      color: const ui.Color(0xFF000000),
-      emptyColor: const ui.Color(0xFFFFFFFF),
+      eyeStyle: const QrEyeStyle(color: ui.Color(0xFF000000)),
+      dataModuleStyle: const QrDataModuleStyle(color: ui.Color(0xFF000000)),
     );
-    final image = await painter.toImage(300);
+    const size = 300.0;
+    final recorder = ui.PictureRecorder();
+    final canvas = ui.Canvas(recorder, const ui.Rect.fromLTWH(0, 0, size, size));
+    canvas.drawRect(
+      const ui.Rect.fromLTWH(0, 0, size, size),
+      ui.Paint()..color = const ui.Color(0xFFFFFFFF),
+    );
+    painter.paint(canvas, const ui.Size(size, size));
+    final image = await recorder.endRecording().toImage(size.toInt(), size.toInt());
     final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
     return byteData!.buffer.asUint8List();
   }

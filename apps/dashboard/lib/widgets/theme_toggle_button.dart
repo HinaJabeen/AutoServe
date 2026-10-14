@@ -20,7 +20,7 @@ class ThemeToggleButton extends ConsumerWidget {
     final mode = ref.watch(themeProvider);
     final notifier = ref.read(themeProvider.notifier);
     final palette = context.palette;
-    final isDark = mode == AppThemeMode.dark;
+    final isDark = mode == ThemeMode.dark;
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(AppDimensions.radiusFull),
@@ -31,7 +31,7 @@ class ThemeToggleButton extends ConsumerWidget {
           curve: Curves.easeOut,
           padding: const EdgeInsets.all(3),
           decoration: BoxDecoration(
-            color: palette.glassFill.withOpacity(isDark ? 0.06 : 0.55),
+            color: palette.glassFill.withValues(alpha: isDark ? 0.06 : 0.55),
             borderRadius: BorderRadius.circular(AppDimensions.radiusFull),
             border: Border.all(color: palette.glassBorder),
           ),
@@ -40,14 +40,14 @@ class ThemeToggleButton extends ConsumerWidget {
             children: [
               _ModeIcon(
                 icon: Icons.light_mode_rounded,
-                active: mode == AppThemeMode.light,
+                active: mode == ThemeMode.light,
                 activeColor: const Color(0xFFC9A227),
                 onTap: notifier.setLight,
                 tooltip: 'Light theme',
               ),
               _ModeIcon(
                 icon: Icons.dark_mode_rounded,
-                active: mode == AppThemeMode.dark,
+                active: mode == ThemeMode.dark,
                 activeColor: palette.accent,
                 onTap: notifier.setDark,
                 tooltip: 'Dark theme',
@@ -91,11 +91,11 @@ class _ModeIcon extends StatelessWidget {
             padding: const EdgeInsets.all(7),
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: active ? activeColor.withOpacity(0.16) : Colors.transparent,
+              color: active ? activeColor.withValues(alpha: 0.16) : Colors.transparent,
               boxShadow: active
                   ? [
                       BoxShadow(
-                        color: activeColor.withOpacity(0.35),
+                        color: activeColor.withValues(alpha: 0.35),
                         blurRadius: 12,
                         spreadRadius: -1,
                       ),

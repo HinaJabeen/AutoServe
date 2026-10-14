@@ -23,10 +23,10 @@ class AppColors {
   static const statusSold = Color(0xFF6B7280);
   static const statusNew = Color(0xFF3B82F6);
 
-    // Dashboard glassmorphism theme (dark navy + pastel pink)
+    // Dashboard glassmorphism theme (dark navy + Mercedes Ambient Blue)
   static const navyBackground = Color(0xFF0B0E1A);
   static const navySurface = Color(0xFF141830);
   static const navyBorder = Color(0xFF232840);
-  static const pastelPink = Color(0xFFFFB7C5);
-  static const pastelPinkDeep = Color(0xFFFF8FA3);
+  static const ambientBlue = Color(0xFF0066FF);
+  static const ambientBlueDeep = Color(0xFF3385FF);
 }

@@ -88,8 +88,8 @@ class _AcceptInviteScreenState extends ConsumerState<AcceptInviteScreen> {
                 center: Alignment.center,
                 radius: 1.0,
                 colors: [
-                  const Color(0xFF0A0A0A).withOpacity(0.10),
-                  const Color(0xFF0A0A0A).withOpacity(0.82),
+                  const Color(0xFF0A0A0A).withValues(alpha: 0.10),
+                  const Color(0xFF0A0A0A).withValues(alpha: 0.82),
                 ],
               ),
             ),
@@ -103,9 +103,9 @@ class _AcceptInviteScreenState extends ConsumerState<AcceptInviteScreen> {
                   width: 400,
                   padding: const EdgeInsets.fromLTRB(40, 40, 40, 36),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.08),
+                    color: Colors.white.withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(3),
-                    border: Border.all(color: Colors.white.withOpacity(0.12), width: 0.8),
+                    border: Border.all(color: Colors.white.withValues(alpha: 0.12), width: 0.8),
                   ),
                   child: Form(
                     key: _formKey,
@@ -135,7 +135,7 @@ class _AcceptInviteScreenState extends ConsumerState<AcceptInviteScreen> {
                         Text(
                           'New password',
                           style: AppTextStyles.caption.copyWith(
-                            color: Colors.white.withOpacity(0.32),
+                            color: Colors.white.withValues(alpha: 0.32),
                             fontSize: 11,
                             fontWeight: FontWeight.w500,
                           ),
@@ -154,7 +154,7 @@ class _AcceptInviteScreenState extends ConsumerState<AcceptInviteScreen> {
                         Text(
                           'Confirm password',
                           style: AppTextStyles.caption.copyWith(
-                            color: Colors.white.withOpacity(0.32),
+                            color: Colors.white.withValues(alpha: 0.32),
                             fontSize: 11,
                             fontWeight: FontWeight.w500,
                           ),
@@ -173,14 +173,14 @@ class _AcceptInviteScreenState extends ConsumerState<AcceptInviteScreen> {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                             decoration: BoxDecoration(
-                              color: AppColors.error.withOpacity(0.07),
+                              color: AppColors.error.withValues(alpha: 0.07),
                               borderRadius: BorderRadius.circular(3),
-                              border: Border.all(color: AppColors.error.withOpacity(0.22)),
+                              border: Border.all(color: AppColors.error.withValues(alpha: 0.22)),
                             ),
                             child: Text(
                               _errorMessage!,
                               style: AppTextStyles.caption.copyWith(
-                                color: AppColors.error.withOpacity(0.85),
+                                color: AppColors.error.withValues(alpha: 0.85),
                                 fontSize: 11,
                               ),
                             ),
@@ -198,9 +198,9 @@ class _AcceptInviteScreenState extends ConsumerState<AcceptInviteScreen> {
                               onTap: _submitting ? null : _submit,
                               child: Ink(
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.09),
+                                  color: Colors.white.withValues(alpha: 0.09),
                                   borderRadius: BorderRadius.circular(3),
-                                  border: Border.all(color: Colors.white.withOpacity(0.10)),
+                                  border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
                                 ),
                                 child: Center(
                                   child: _submitting
@@ -210,14 +210,14 @@ class _AcceptInviteScreenState extends ConsumerState<AcceptInviteScreen> {
                                           child: CircularProgressIndicator(
                                             strokeWidth: 1.5,
                                             valueColor: AlwaysStoppedAnimation<Color>(
-                                              Colors.white.withOpacity(0.35),
+                                              Colors.white.withValues(alpha: 0.35),
                                             ),
                                           ),
                                         )
                                       : Text(
                                           'Activate account',
                                           style: AppTextStyles.body.copyWith(
-                                            color: Colors.white.withOpacity(0.80),
+                                            color: Colors.white.withValues(alpha: 0.80),
                                             fontSize: 13,
                                             fontWeight: FontWeight.w500,
                                           ),
@@ -247,10 +247,10 @@ class _AcceptInviteScreenState extends ConsumerState<AcceptInviteScreen> {
       controller: controller,
       obscureText: _obscure,
       validator: validator,
-      style: AppTextStyles.body.copyWith(color: Colors.white.withOpacity(0.85), fontSize: 13),
+      style: AppTextStyles.body.copyWith(color: Colors.white.withValues(alpha: 0.85), fontSize: 13),
       decoration: InputDecoration(
         hintText: '••••••••',
-        hintStyle: AppTextStyles.body.copyWith(color: Colors.white.withOpacity(0.14), fontSize: 13),
+        hintStyle: AppTextStyles.body.copyWith(color: Colors.white.withValues(alpha: 0.14), fontSize: 13),
         suffixIcon: Padding(
           padding: const EdgeInsets.only(right: 12),
           child: GestureDetector(
@@ -258,25 +258,25 @@ class _AcceptInviteScreenState extends ConsumerState<AcceptInviteScreen> {
             child: Icon(
               _obscure ? Icons.visibility_off_outlined : Icons.visibility_outlined,
               size: 15,
-              color: Colors.white.withOpacity(0.20),
+              color: Colors.white.withValues(alpha: 0.20),
             ),
           ),
         ),
         suffixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
         filled: true,
-        fillColor: Colors.white.withOpacity(0.04),
+        fillColor: Colors.white.withValues(alpha: 0.04),
         contentPadding: const EdgeInsets.symmetric(horizontal: 13, vertical: 12),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(3),
-          borderSide: BorderSide(color: Colors.white.withOpacity(0.08)),
+          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(3),
-          borderSide: BorderSide(color: Colors.white.withOpacity(0.08)),
+          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(3),
-          borderSide: BorderSide(color: Colors.white.withOpacity(0.30)),
+          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.30)),
         ),
       ),
     );

@@ -72,7 +72,7 @@ class AppointmentSchedulerScreen extends ConsumerWidget {
                 boxShadow: [
                   BoxShadow(
                     color: palette.shadowColor
-                        .withOpacity(isDark ? 0.35 : 0.06),
+                        .withValues(alpha: isDark ? 0.35 : 0.06),
                     blurRadius: 20, offset: const Offset(0, 6),
                   ),
                 ],
@@ -99,7 +99,7 @@ class AppointmentSchedulerScreen extends ConsumerWidget {
                 calendarStyle: CalendarStyle(
                   // Today
                   todayDecoration: BoxDecoration(
-                    color: palette.accent.withOpacity(0.20),
+                    color: palette.accent.withValues(alpha: 0.20),
                     shape: BoxShape.circle,
                   ),
                   todayTextStyle: AppTextStyles.body.copyWith(
@@ -161,7 +161,7 @@ class AppointmentSchedulerScreen extends ConsumerWidget {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 8, vertical: 2),
                       decoration: BoxDecoration(
-                        color: palette.accent.withOpacity(0.14),
+                        color: palette.accent.withValues(alpha: 0.14),
                         borderRadius:
                             BorderRadius.circular(AppDimensions.radiusFull),
                       ),
@@ -266,7 +266,7 @@ class _LeadCard extends StatelessWidget {
         border: Border.all(color: palette.border),
         boxShadow: [
           BoxShadow(
-            color: palette.shadowColor.withOpacity(isDark ? 0.30 : 0.05),
+            color: palette.shadowColor.withValues(alpha: isDark ? 0.30 : 0.05),
             blurRadius: 12, offset: const Offset(0, 4),
           ),
         ],
@@ -277,7 +277,7 @@ class _LeadCard extends StatelessWidget {
           Container(
             width: 40, height: 40,
             decoration: BoxDecoration(
-              color: palette.accent.withOpacity(0.14),
+              color: palette.accent.withValues(alpha: 0.14),
               shape: BoxShape.circle,
             ),
             child: Center(
@@ -319,10 +319,10 @@ class _LeadCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
             decoration: BoxDecoration(
-              color: badgeColor.withOpacity(0.14),
+              color: badgeColor.withValues(alpha: 0.14),
               borderRadius:
                   BorderRadius.circular(AppDimensions.radiusFull),
-              border: Border.all(color: badgeColor.withOpacity(0.40)),
+              border: Border.all(color: badgeColor.withValues(alpha: 0.40)),
             ),
             child: Text(_label(lead.status),
                 style: AppTextStyles.caption.copyWith(

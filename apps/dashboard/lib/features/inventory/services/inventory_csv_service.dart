@@ -1,7 +1,7 @@
 // lib/features/inventory/services/inventory_csv_service.dart
 
 import 'package:csv/csv.dart';
-import 'package:dashboard/features/inventory/models/car_model.dart';
+import 'package:shared/shared.dart';
 
 class CsvRowError {
   const CsvRowError(this.rowNumber, this.message);

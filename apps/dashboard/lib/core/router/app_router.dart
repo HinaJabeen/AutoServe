@@ -23,19 +23,34 @@ class AppRoutes {
 }
 
 final goRouterProvider = Provider<GoRouter>((ref) {
-  final authState = ref.watch(authProvider);
-
+  // IMPORTANT: do not `ref.watch(authProvider)` here. This Provider body runs
+  // once; watching auth state would make Riverpod tear down and recreate the
+  // entire GoRouter (and its Navigator/Overlay subtree) on every auth event —
+  // including the token-refresh events Supabase fires in the background during
+  // any request — which blanks whatever screen/dialog was active and leaves a
+  // half-deactivated Element behind (the `_ElementLifecycle.inactive` assertion
+  // on next navigation). Auth-driven redirects are re-evaluated via
+  // `refreshListenable` below instead, which only re-runs `redirect`, not the
+  // whole router.
   return GoRouter(
     initialLocation: AppRoutes.overview,
     refreshListenable: _AuthChangeNotifier(ref),
     redirect: (context, state) {
-      final loggedIn = authState.isAuthenticated;
+      final loggedIn = ref.read(authProvider).isAuthenticated;
       final goingToLogin = state.matchedLocation == AppRoutes.login;
       if (!loggedIn && !goingToLogin) return AppRoutes.login;
       if (loggedIn && goingToLogin) return AppRoutes.overview;
       return null;
     },
     routes: [
+      // Bare '/' (a fresh tab, a typed base URL, any stray `go('/')`) has no
+      // matching GoRoute otherwise — go_router throws GoException instead of
+      // falling back to `initialLocation` for a location visited explicitly.
+      // `redirect` above still decides login-vs-overview once this resolves.
+      GoRoute(
+        path: '/',
+        redirect: (_, __) => AppRoutes.overview,
+      ),
       GoRoute(
         path: AppRoutes.login,
         builder: (_, __) => const LoginScreen(),

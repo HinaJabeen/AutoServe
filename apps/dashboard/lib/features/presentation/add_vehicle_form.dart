@@ -142,7 +142,7 @@ class _AddVehicleFormState extends ConsumerState<AddVehicleForm> {
         width: 680,
         constraints: const BoxConstraints(maxHeight: 700),
         decoration: BoxDecoration(
-          color: AppColors.navySurface.withOpacity(0.97),
+          color: AppColors.navySurface.withValues(alpha: 0.97),
           borderRadius: BorderRadius.circular(AppDimensions.radiusL),
           border: Border.all(color: AppColors.navyBorder),
         ),
@@ -171,7 +171,7 @@ class _AddVehicleFormState extends ConsumerState<AddVehicleForm> {
                 ),
               ]),
             ),
-            Divider(color: AppColors.navyBorder.withOpacity(0.6), height: 1),
+            Divider(color: AppColors.navyBorder.withValues(alpha: 0.6), height: 1),
 
             // Form
             Flexible(
@@ -241,11 +241,11 @@ class _AddVehicleFormState extends ConsumerState<AddVehicleForm> {
                         Container(
                           padding: const EdgeInsets.all(AppDimensions.paddingM),
                           decoration: BoxDecoration(
-                            color: AppColors.error.withOpacity(0.08),
+                            color: AppColors.error.withValues(alpha: 0.08),
                             borderRadius:
                                 BorderRadius.circular(AppDimensions.radiusS),
                             border: Border.all(
-                                color: AppColors.error.withOpacity(0.3)),
+                                color: AppColors.error.withValues(alpha: 0.3)),
                           ),
                           child: Text(mutationState.errorMessage!,
                               style: AppTextStyles.caption
@@ -258,7 +258,7 @@ class _AddVehicleFormState extends ConsumerState<AddVehicleForm> {
               ),
             ),
 
-            Divider(color: AppColors.navyBorder.withOpacity(0.6), height: 1),
+            Divider(color: AppColors.navyBorder.withValues(alpha: 0.6), height: 1),
 
             // Footer
             Padding(
@@ -279,10 +279,10 @@ class _AddVehicleFormState extends ConsumerState<AddVehicleForm> {
                     child: ElevatedButton(
                       onPressed: isSubmitting ? null : _handleSubmit,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.pastelPink,
+                        backgroundColor: AppColors.ambientBlue,
                         foregroundColor: AppColors.navyBackground,
                         disabledBackgroundColor:
-                            AppColors.pastelPink.withOpacity(0.4),
+                            AppColors.ambientBlue.withValues(alpha: 0.4),
                         shape: RoundedRectangleBorder(
                             borderRadius:
                                 BorderRadius.circular(AppDimensions.radiusS)),
@@ -364,7 +364,7 @@ class _AddVehicleFormState extends ConsumerState<AddVehicleForm> {
           _label(label),
           const SizedBox(height: 6),
           DropdownButtonFormField<String>(
-            value: value,        // safe — guaranteed null or in list
+            initialValue: value,  // safe — guaranteed null or in list
             isExpanded: true,
             dropdownColor: AppColors.navySurface,
             icon: const Icon(Icons.keyboard_arrow_down_rounded,
@@ -390,7 +390,7 @@ class _AddVehicleFormState extends ConsumerState<AddVehicleForm> {
 
   InputDecoration _dec() => InputDecoration(
     filled: true,
-    fillColor: Colors.white.withOpacity(0.04),
+    fillColor: Colors.white.withValues(alpha: 0.04),
     contentPadding:
         const EdgeInsets.symmetric(horizontal: 13, vertical: 12),
     border: OutlineInputBorder(
@@ -402,11 +402,11 @@ class _AddVehicleFormState extends ConsumerState<AddVehicleForm> {
     focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(AppDimensions.radiusS),
         borderSide:
-            const BorderSide(color: AppColors.pastelPink, width: 1.4)),
+            const BorderSide(color: AppColors.ambientBlue, width: 1.4)),
     errorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(AppDimensions.radiusS),
         borderSide:
-            BorderSide(color: AppColors.error.withOpacity(0.6))),
+            BorderSide(color: AppColors.error.withValues(alpha: 0.6))),
     focusedErrorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(AppDimensions.radiusS),
         borderSide: const BorderSide(color: AppColors.error)),

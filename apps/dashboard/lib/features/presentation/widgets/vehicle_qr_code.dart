@@ -83,12 +83,12 @@ class VehicleQRDialog extends StatelessWidget {
         width: 360,
         padding: const EdgeInsets.fromLTRB(28, 28, 28, 24),
         decoration: BoxDecoration(
-          color: AppColors.navySurface.withOpacity(0.92),
+          color: AppColors.navySurface.withValues(alpha: 0.92),
           borderRadius: BorderRadius.circular(AppDimensions.radiusL),
-          border: Border.all(color: AppColors.pastelPink.withOpacity(0.22)),
+          border: Border.all(color: AppColors.ambientBlue.withValues(alpha: 0.22)),
           boxShadow: [
             BoxShadow(
-              color: AppColors.pastelPink.withOpacity(0.16),
+              color: AppColors.ambientBlue.withValues(alpha: 0.16),
               blurRadius: 40,
               spreadRadius: -6,
             ),
@@ -134,7 +134,7 @@ class VehicleQRDialog extends StatelessWidget {
                 borderRadius: BorderRadius.circular(AppDimensions.radiusM),
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.pastelPink.withOpacity(0.28),
+                    color: AppColors.ambientBlue.withValues(alpha: 0.28),
                     blurRadius: 32,
                     spreadRadius: 2,
                   ),
@@ -149,7 +149,7 @@ class VehicleQRDialog extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.05),
+                color: Colors.white.withValues(alpha: 0.05),
                 borderRadius: BorderRadius.circular(AppDimensions.radiusFull),
                 border: Border.all(color: AppColors.navyBorder),
               ),

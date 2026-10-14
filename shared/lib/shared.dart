@@ -1,4 +1,5 @@
 export 'models/vehicle_model.dart';
+export 'models/car_model.dart';
 export 'models/dealership_model.dart';
 export 'models/user_model.dart';
 export 'models/lead_model.dart';
@@ -7,6 +8,7 @@ export 'services/supabase_service.dart';
 export 'theme/app_colors.dart';
 export 'theme/app_dimensions.dart';
 export 'theme/app_text_styles.dart';
+export 'theme/app_palette.dart';
 export 'widgets/app_button.dart';
 export 'widgets/app_text_field.dart';
 export 'widgets/vehicle_card.dart';

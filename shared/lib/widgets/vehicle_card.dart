@@ -20,7 +20,7 @@ class VehicleCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(AppDimensions.radiusM),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -38,7 +38,7 @@ class VehicleCard extends StatelessWidget {
                   return Image.network(
                     imageUrl,
                     fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Container(
+                    errorBuilder: (_, _, _) => Container(
                       color: AppColors.shimmerBase,
                       child: const Icon(
                         Icons.directions_car,

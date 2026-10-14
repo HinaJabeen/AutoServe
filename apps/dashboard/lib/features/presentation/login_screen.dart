@@ -180,8 +180,8 @@ class _LoginScreenState extends State<LoginScreen>
                       center: Alignment.center,
                       radius: 1.0,
                       colors: [
-                        Colors.black.withOpacity(0.10),
-                        Colors.black.withOpacity(0.88),
+                        Colors.black.withValues(alpha: 0.10),
+                        Colors.black.withValues(alpha: 0.88),
                       ],
                     ),
                   ),
@@ -212,7 +212,7 @@ class _LoginScreenState extends State<LoginScreen>
                           style: TextStyle(
                             fontSize: 9,
                             fontWeight: FontWeight.w700,
-                            color: Colors.white.withOpacity(0.14),
+                            color: Colors.white.withValues(alpha: 0.14),
                             letterSpacing: 5,
                           ),
                         ),
@@ -230,13 +230,13 @@ class _LoginScreenState extends State<LoginScreen>
                               height: 2,
                               decoration: BoxDecoration(
                                 color: active
-                                    ? _Ambient.cyan.withOpacity(0.65)
-                                    : Colors.white.withOpacity(0.10),
+                                    ? _Ambient.cyan.withValues(alpha: 0.65)
+                                    : Colors.white.withValues(alpha: 0.10),
                                 borderRadius: BorderRadius.circular(2),
                                 boxShadow: active
                                     ? [
                                         BoxShadow(
-                                          color: _Ambient.cyan.withOpacity(0.55),
+                                          color: _Ambient.cyan.withValues(alpha: 0.55),
                                           blurRadius: 8,
                                           spreadRadius: 0.5,
                                         ),
@@ -295,7 +295,7 @@ class _AmbientLightPainter extends CustomPainter {
         size.height * (0.24 + 0.08 * math.cos(angle * 0.55)),
       ),
       radius: size.shortestSide * 0.50,
-      color: _Ambient.cyan.withOpacity(0.07),
+      color: _Ambient.cyan.withValues(alpha: 0.07),
     );
 
     _drawOrb(
@@ -305,7 +305,7 @@ class _AmbientLightPainter extends CustomPainter {
         size.height * (0.70 + 0.10 * math.sin(angle * 0.65 + 0.6)),
       ),
       radius: size.shortestSide * 0.55,
-      color: _Ambient.cobalt.withOpacity(0.05),
+      color: _Ambient.cobalt.withValues(alpha: 0.05),
     );
 
     _drawOrb(
@@ -315,7 +315,7 @@ class _AmbientLightPainter extends CustomPainter {
         size.height * (0.42 + 0.07 * math.cos(angle * 0.85)),
       ),
       radius: size.shortestSide * 0.32,
-      color: _Ambient.cyanDeep.withOpacity(0.05),
+      color: _Ambient.cyanDeep.withValues(alpha: 0.05),
     );
   }
 
@@ -327,7 +327,7 @@ class _AmbientLightPainter extends CustomPainter {
   }) {
     final paint = Paint()
       ..shader = RadialGradient(
-        colors: [color, color.withOpacity(0)],
+        colors: [color, color.withValues(alpha: 0)],
       ).createShader(Rect.fromCircle(center: center, radius: radius));
     canvas.drawCircle(center, radius, paint);
   }
@@ -363,7 +363,7 @@ class _ParallaxDotGrid extends StatelessWidget {
 class _DotGridPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()..color = Colors.white.withOpacity(0.022);
+    final paint = Paint()..color = Colors.white.withValues(alpha: 0.022);
     const spacing = 36.0;
     for (double x = 0; x < size.width; x += spacing) {
       for (double y = 0; y < size.height; y += spacing) {
@@ -423,7 +423,7 @@ class _BrandLogoBackdrop extends StatelessWidget {
                       ..setEntry(3, 2, 0.0012)
                       ..rotateX(rotX)
                       ..rotateY(rotY)
-                      ..scale(breathe),
+                      ..scaleByDouble(breathe, breathe, breathe, 1),
                     child: ImageFiltered(
                       // Soft blur so the logo reads as ambient atmosphere, not a foreground element
                       imageFilter: ImageFilter.blur(sigmaX: 6, sigmaY: 6),
@@ -501,7 +501,7 @@ class _FloatingCardStage extends StatelessWidget {
                     height: 46,
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(200),
-                      color: _Ambient.cyan.withOpacity(0.12),
+                      color: _Ambient.cyan.withValues(alpha: 0.12),
                     ),
                   ),
                 ),
@@ -590,9 +590,13 @@ Future<void> _handleLogin() async {
       );
     } catch (_) {}
 
-    if (mounted) {
-      context.go('/home');
-    }
+    // No manual navigation needed: `authProvider`'s change notifies the
+    // router's `refreshListenable`, which re-runs `redirect` and sends an
+    // authenticated user away from `/login` to `AppRoutes.overview` on its
+    // own. `context.go('/home')` used to run here, but '/home' isn't a
+    // declared route — that threw `GoException: no routes for location: /home`
+    // on every login (a refresh "fixed" it only because the redirect, not
+    // this call, is what actually navigates).
   }
   @override
   Widget build(BuildContext context) {
@@ -608,12 +612,12 @@ Future<void> _handleLogin() async {
         // bloom, so the panel reads as physically lifted off the backdrop.
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.55),
+            color: Colors.black.withValues(alpha: 0.55),
             blurRadius: 60,
             offset: const Offset(0, 30),
           ),
           BoxShadow(
-            color: _Ambient.cyan.withOpacity(0.06),
+            color: _Ambient.cyan.withValues(alpha: 0.06),
             blurRadius: 90,
             spreadRadius: -10,
           ),
@@ -629,10 +633,10 @@ Future<void> _handleLogin() async {
               child: Container(
                 width: 400,
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.08),
+                  color: Colors.white.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(3),
                   border: Border.all(
-                    color: Colors.white.withOpacity(0.12),
+                    color: Colors.white.withValues(alpha: 0.12),
                     width: 0.8,
                   ),
                 ),
@@ -651,13 +655,13 @@ Future<void> _handleLogin() async {
                         'AutoServe',
                         textAlign: TextAlign.center,
                         style: AppTextStyles.heading2.copyWith(
-                          color: Colors.white.withOpacity(0.95),
+                          color: Colors.white.withValues(alpha: 0.95),
                           fontSize: 28,
                           fontWeight: FontWeight.w700,
                           letterSpacing: 1.5,
                           shadows: [
                             Shadow(
-                              color: Colors.black.withOpacity(0.5),
+                              color: Colors.black.withValues(alpha: 0.5),
                               blurRadius: 14,
                               offset: const Offset(0, 4),
                             ),
@@ -685,7 +689,7 @@ Future<void> _handleLogin() async {
                         child: Text(
                           '"${widget.brand.tagline}"',
                           style: AppTextStyles.caption.copyWith(
-                            color: Colors.white.withOpacity(0.20),
+                            color: Colors.white.withValues(alpha: 0.20),
                             fontSize: 11,
                             fontStyle: FontStyle.italic,
                           ),
@@ -723,7 +727,7 @@ Future<void> _handleLogin() async {
                             child: Text(
                               'Forgot?',
                               style: AppTextStyles.caption.copyWith(
-                                color: Colors.white.withOpacity(0.18),
+                                color: Colors.white.withValues(alpha: 0.18),
                                 fontSize: 11,
                               ),
                             ),
@@ -746,7 +750,7 @@ Future<void> _handleLogin() async {
                                   ? Icons.visibility_off_outlined
                                   : Icons.visibility_outlined,
                               size: 15,
-                              color: Colors.white.withOpacity(0.20),
+                              color: Colors.white.withValues(alpha: 0.20),
                             ),
                           ),
                           validator: (v) {
@@ -778,7 +782,7 @@ Future<void> _handleLogin() async {
                       const SizedBox(height: 28),
 
                       Divider(
-                        color: Colors.white.withOpacity(0.05),
+                        color: Colors.white.withValues(alpha: 0.05),
                         height: 1,
                       ),
 
@@ -788,7 +792,7 @@ Future<void> _handleLogin() async {
                         'Restricted to dealership staff only.',
                         textAlign: TextAlign.center,
                         style: AppTextStyles.caption.copyWith(
-                          color: Colors.white.withOpacity(0.12),
+                          color: Colors.white.withValues(alpha: 0.12),
                           fontSize: 10,
                           letterSpacing: 0.3,
                         ),
@@ -814,7 +818,7 @@ Future<void> _handleLogin() async {
                         angle: -0.5,
                         child: Container(
                           width: 70,
-                          color: Colors.white.withOpacity(0.035),
+                          color: Colors.white.withValues(alpha: 0.035),
                         ),
                       ),
                     ),
@@ -846,12 +850,12 @@ class _GlassFieldShell extends StatelessWidget {
         borderRadius: BorderRadius.circular(4),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.35),
+            color: Colors.black.withValues(alpha: 0.35),
             blurRadius: 14,
             offset: const Offset(0, 6),
           ),
           BoxShadow(
-            color: _Ambient.cyan.withOpacity(0.05),
+            color: _Ambient.cyan.withValues(alpha: 0.05),
             blurRadius: 18,
             spreadRadius: -2,
           ),
@@ -881,7 +885,7 @@ class _FieldLabel extends StatelessWidget {
     return Text(
       text,
       style: AppTextStyles.caption.copyWith(
-        color: Colors.white.withOpacity(0.32),
+        color: Colors.white.withValues(alpha: 0.32),
         fontSize: 11,
         fontWeight: FontWeight.w500,
         letterSpacing: 0.3,
@@ -925,13 +929,13 @@ class _Field extends StatelessWidget {
       validator: validator,
       onFieldSubmitted: onFieldSubmitted,
       style: AppTextStyles.body.copyWith(
-        color: Colors.white.withOpacity(0.85),
+        color: Colors.white.withValues(alpha: 0.85),
         fontSize: 13,
       ),
       decoration: InputDecoration(
         hintText: hint,
         hintStyle: AppTextStyles.body.copyWith(
-          color: Colors.white.withOpacity(0.14),
+          color: Colors.white.withValues(alpha: 0.14),
           fontSize: 13,
         ),
         suffixIcon: suffixIcon != null
@@ -943,7 +947,7 @@ class _Field extends StatelessWidget {
         suffixIconConstraints:
             const BoxConstraints(minWidth: 0, minHeight: 0),
         filled: true,
-        fillColor: Colors.white.withOpacity(0.04),
+        fillColor: Colors.white.withValues(alpha: 0.04),
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 13,
           vertical: 12,
@@ -951,22 +955,22 @@ class _Field extends StatelessWidget {
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(3),
           borderSide:
-              BorderSide(color: Colors.white.withOpacity(0.08)),
+              BorderSide(color: Colors.white.withValues(alpha: 0.08)),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(3),
           borderSide:
-              BorderSide(color: Colors.white.withOpacity(0.08)),
+              BorderSide(color: Colors.white.withValues(alpha: 0.08)),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(3),
           borderSide:
-              BorderSide(color: Colors.white.withOpacity(0.30)),
+              BorderSide(color: Colors.white.withValues(alpha: 0.30)),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(3),
           borderSide:
-              BorderSide(color: AppColors.error.withOpacity(0.5)),
+              BorderSide(color: AppColors.error.withValues(alpha: 0.5)),
         ),
         focusedErrorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(3),
@@ -1000,9 +1004,9 @@ class _ErrorBanner extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.07),
+        color: color.withValues(alpha: 0.07),
         borderRadius: BorderRadius.circular(3),
-        border: Border.all(color: color.withOpacity(0.22)),
+        border: Border.all(color: color.withValues(alpha: 0.22)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1011,7 +1015,7 @@ class _ErrorBanner extends StatelessWidget {
             _isAccessError
                 ? Icons.block_outlined
                 : Icons.info_outline_rounded,
-            color: color.withOpacity(0.8),
+            color: color.withValues(alpha: 0.8),
             size: 13,
           ),
           const SizedBox(width: 8),
@@ -1019,7 +1023,7 @@ class _ErrorBanner extends StatelessWidget {
             child: Text(
               message,
               style: AppTextStyles.caption.copyWith(
-                color: color.withOpacity(0.85),
+                color: color.withValues(alpha: 0.85),
                 fontSize: 11,
                 height: 1.5,
               ),
@@ -1052,7 +1056,7 @@ class _SignInButton extends StatelessWidget {
             ? []
             : [
                 BoxShadow(
-                  color: _Ambient.cyan.withOpacity(0.10),
+                  color: _Ambient.cyan.withValues(alpha: 0.10),
                   blurRadius: 22,
                   spreadRadius: -4,
                 ),
@@ -1064,15 +1068,15 @@ class _SignInButton extends StatelessWidget {
         child: InkWell(
           borderRadius: BorderRadius.circular(3),
           onTap: isLoading ? null : onPressed,
-          hoverColor: Colors.white.withOpacity(0.05),
+          hoverColor: Colors.white.withValues(alpha: 0.05),
           child: Ink(
             decoration: BoxDecoration(
               color: isLoading
-                  ? Colors.white.withOpacity(0.04)
-                  : Colors.white.withOpacity(0.09),
+                  ? Colors.white.withValues(alpha: 0.04)
+                  : Colors.white.withValues(alpha: 0.09),
               borderRadius: BorderRadius.circular(3),
               border: Border.all(
-                color: Colors.white.withOpacity(0.10),
+                color: Colors.white.withValues(alpha: 0.10),
               ),
             ),
             child: Center(
@@ -1083,14 +1087,14 @@ class _SignInButton extends StatelessWidget {
                       child: CircularProgressIndicator(
                         strokeWidth: 1.5,
                         valueColor: AlwaysStoppedAnimation<Color>(
-                          Colors.white.withOpacity(0.35),
+                          Colors.white.withValues(alpha: 0.35),
                         ),
                       ),
                     )
                   : Text(
                       'Sign in',
                       style: AppTextStyles.body.copyWith(
-                        color: Colors.white.withOpacity(0.80),
+                        color: Colors.white.withValues(alpha: 0.80),
                         fontSize: 13,
                         fontWeight: FontWeight.w500,
                         letterSpacing: 0.2,

@@ -9,13 +9,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
 import 'package:shared/shared.dart';
 import 'package:dashboard/theme/app_palette.dart';
-import 'package:dashboard/theme/app_palette.dart';
 import '../providers/overview_provider.dart';
-
-const _cyan = Color(0xFF00D4FF);
-const _emerald = Color(0xFF00F5A0);
-const _amber = Color(0xFFFFB547);
-const _rose = Color(0xFFFF6B8A);
 
 class OverviewScreen extends ConsumerWidget {
   const OverviewScreen({super.key});
@@ -87,24 +81,32 @@ class _MetricsRow extends StatelessWidget {
   final DashboardMetrics metrics;
   final AppPalette palette;
 
+  String get _formattedStockValue {
+    final whole = metrics.grossStockValue.toStringAsFixed(0);
+    return 'PKR ${whole.replaceAllMapped(RegExp(r'(\d)(?=(\d{3})+(?!\d))'), (m) => '${m[1]},')}';
+  }
+
   @override
   Widget build(BuildContext context) {
     final cards = [
-      _MetricCardData(icon: Icons.directions_car_filled_rounded, label: 'Total Vehicles', value: metrics.totalVehicles),
-      _MetricCardData(icon: Icons.check_circle_outline_rounded, label: 'Available', value: metrics.availableVehicles),
-      _MetricCardData(icon: Icons.bookmark_border_rounded, label: 'Reserved', value: metrics.reservedVehicles),
-      _MetricCardData(icon: Icons.person_add_alt_1_rounded, label: 'New Leads Today', value: metrics.newLeadsToday),
+      _MetricCardData(icon: Icons.account_balance_wallet_outlined, display: _formattedStockValue, label: 'Gross Stock Value'),
+      _MetricCardData(icon: Icons.groups_outlined, display: '${metrics.activeLeadsCount}', label: 'Active Leads'),
+      _MetricCardData(icon: Icons.sell_outlined, display: '${metrics.soldThisMonth}', label: 'Cars Sold This Month'),
+      _MetricCardData(icon: Icons.directions_car_filled_rounded, display: '${metrics.totalVehicles}', label: 'Total Vehicles'),
+      _MetricCardData(icon: Icons.check_circle_outline_rounded, display: '${metrics.availableVehicles}', label: 'Available'),
+      _MetricCardData(icon: Icons.bookmark_border_rounded, display: '${metrics.reservedVehicles}', label: 'Reserved'),
+      _MetricCardData(icon: Icons.person_add_alt_1_rounded, display: '${metrics.newLeadsToday}', label: 'New Leads Today'),
     ];
 
-    return Row(
+    return Wrap(
+      spacing: AppDimensions.paddingM,
+      runSpacing: AppDimensions.paddingM,
       children: List.generate(cards.length, (i) {
-        return Expanded(
-          child: Padding(
-            padding: EdgeInsets.only(right: i == cards.length - 1 ? 0 : AppDimensions.paddingM),
-            child: _StaggeredFadeIn(
-              delay: Duration(milliseconds: 80 * (i + 1)),
-              child: _MetricCard(data: cards[i], palette: palette),
-            ),
+        return SizedBox(
+          width: 210,
+          child: _StaggeredFadeIn(
+            delay: Duration(milliseconds: 80 * (i + 1)),
+            child: _MetricCard(data: cards[i], palette: palette),
           ),
         );
       }),
@@ -113,19 +115,16 @@ class _MetricsRow extends StatelessWidget {
 }
 
 class _MetricCardData {
-  const _MetricCardData({required this.icon, required this.label, required this.value});
+  const _MetricCardData({required this.icon, required this.display, required this.label});
   final IconData icon;
+  final String display;
   final String label;
-  final int value;
 }
 
 class _MetricCard extends StatelessWidget {
   const _MetricCard({required this.data, required this.palette});
   final _MetricCardData data;
   final AppPalette palette;
-
-  String get _formattedValue => data.value.toString().replaceAllMapped(
-      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]},');
 
   @override
   Widget build(BuildContext context) {
@@ -137,10 +136,10 @@ class _MetricCard extends StatelessWidget {
         border: Border.all(color: palette.border),
         boxShadow: [
           BoxShadow(
-              color: Colors.black.withOpacity(0.35),
+              color: palette.shadowColor.withValues(alpha: 0.35),
               blurRadius: 18, offset: const Offset(0, 6)),
           BoxShadow(
-              color: AppColors.pastelPink.withOpacity(0.04),
+              color: palette.accent.withValues(alpha: 0.04),
               blurRadius: 40, spreadRadius: -4),
         ],
       ),
@@ -150,15 +149,17 @@ class _MetricCard extends StatelessWidget {
           Container(
             width: 38, height: 38,
             decoration: BoxDecoration(
-              color: AppColors.pastelPink.withOpacity(0.14),
+              color: palette.accent.withValues(alpha: 0.14),
               borderRadius: BorderRadius.circular(AppDimensions.radiusS),
             ),
-            child: Icon(data.icon, color: AppColors.pastelPink, size: 18),
+            child: Icon(data.icon, color: palette.accent, size: 18),
           ),
           const SizedBox(height: AppDimensions.paddingL),
-          Text(_formattedValue,
+          Text(data.display,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: AppTextStyles.heading1.copyWith(
-                  color: palette.textPrimary, fontSize: 28)),
+                  color: palette.textPrimary, fontSize: 24)),
           const SizedBox(height: 4),
           Text(data.label,
               style: AppTextStyles.caption.copyWith(
@@ -176,6 +177,7 @@ class _ChartsRow extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final revenueAsync = ref.watch(revenueMonthlyProvider);
     final agingAsync = ref.watch(inventoryAgingProvider);
+    final conversionAsync = ref.watch(leadConversionRateProvider);
     final palette = Theme.of(context).extension<AppPalette>()!;
 
     return LayoutBuilder(builder: (context, constraints) {
@@ -185,12 +187,12 @@ class _ChartsRow extends ConsumerWidget {
           title: 'Revenue Trend',
           subtitle: 'Sold vehicles · last 6 months',
           icon: Icons.trending_up_rounded,
-          accentColor: _cyan,
+          accentColor: palette.accent,
           palette: palette,
           child: revenueAsync.when(
             data: (data) => data.isEmpty
                 ? const _ChartEmpty(message: 'No sold vehicles yet')
-                : _RevenueAreaChart(data: data),
+                : _RevenueAreaChart(data: data, palette: palette),
             loading: () => const _ChartSkeleton(),
             error: (e, _) => _ChartError(message: e.toString()),
           ),
@@ -199,12 +201,24 @@ class _ChartsRow extends ConsumerWidget {
           title: 'Inventory Status',
           subtitle: 'Live breakdown by status',
           icon: Icons.donut_large_rounded,
-          accentColor: _emerald,
+          accentColor: palette.statusAvailable,
           palette: palette,
           child: agingAsync.when(
             data: (data) => data.isEmpty
                 ? const _ChartEmpty(message: 'No vehicles in inventory')
                 : _InventoryDonutChart(data: data),
+            loading: () => const _ChartSkeleton(),
+            error: (e, _) => _ChartError(message: e.toString()),
+          ),
+        ),
+        _ChartCard(
+          title: 'Lead Conversion',
+          subtitle: 'Closed won · % of all leads',
+          icon: Icons.insights_rounded,
+          accentColor: palette.accent,
+          palette: palette,
+          child: conversionAsync.when(
+            data: (rate) => _LeadConversionGauge(rate: rate, palette: palette),
             loading: () => const _ChartSkeleton(),
             error: (e, _) => _ChartError(message: e.toString()),
           ),
@@ -220,7 +234,7 @@ class _ChartsRow extends ConsumerWidget {
               .map((e) => Expanded(
                     child: Padding(
                       padding: EdgeInsets.only(
-                          right: e.key == 0 ? AppDimensions.paddingM : 0),
+                          right: e.key == charts.length - 1 ? 0 : AppDimensions.paddingM),
                       child: e.value,
                     ),
                   ))
@@ -228,9 +242,57 @@ class _ChartsRow extends ConsumerWidget {
         );
       }
       return Column(
-        children: [charts[0], const SizedBox(height: AppDimensions.paddingM), charts[1]],
+        children: [
+          for (var i = 0; i < charts.length; i++) ...[
+            if (i > 0) const SizedBox(height: AppDimensions.paddingM),
+            charts[i],
+          ],
+        ],
       );
     });
+  }
+}
+
+class _LeadConversionGauge extends StatelessWidget {
+  const _LeadConversionGauge({required this.rate, required this.palette});
+  final double rate;
+  final AppPalette palette;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SizedBox(
+            width: 120,
+            height: 120,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                SizedBox(
+                  width: 120,
+                  height: 120,
+                  child: CircularProgressIndicator(
+                    value: (rate / 100).clamp(0.0, 1.0),
+                    strokeWidth: 10,
+                    backgroundColor: palette.border,
+                    valueColor: AlwaysStoppedAnimation<Color>(palette.accent),
+                  ),
+                ),
+                Text('${rate.toStringAsFixed(0)}%',
+                    style: AppTextStyles.heading1.copyWith(
+                        color: palette.textPrimary, fontSize: 22)),
+              ],
+            ),
+          ),
+          const SizedBox(height: AppDimensions.paddingM),
+          Text('leads closed won',
+              style: AppTextStyles.caption.copyWith(
+                  color: palette.textTertiary, fontSize: 11)),
+        ],
+      ),
+    );
   }
 }
 
@@ -257,13 +319,13 @@ class _ChartCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: palette.surface,
         borderRadius: BorderRadius.circular(AppDimensions.radiusL),
-        border: Border.all(color: accentColor.withOpacity(0.12)),
+        border: Border.all(color: accentColor.withValues(alpha: 0.12)),
         boxShadow: [
           BoxShadow(
-              color: Colors.black.withOpacity(0.45),
+              color: Colors.black.withValues(alpha: 0.45),
               blurRadius: 28, offset: const Offset(0, 10)),
           BoxShadow(
-              color: accentColor.withOpacity(0.07),
+              color: accentColor.withValues(alpha: 0.07),
               blurRadius: 50, spreadRadius: -6, offset: const Offset(0, 4)),
         ],
       ),
@@ -275,7 +337,7 @@ class _ChartCard extends StatelessWidget {
               Container(
                 width: 32, height: 32,
                 decoration: BoxDecoration(
-                    color: accentColor.withOpacity(0.12),
+                    color: accentColor.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(8)),
                 child: Icon(icon, color: accentColor, size: 16),
               ),
@@ -302,8 +364,9 @@ class _ChartCard extends StatelessWidget {
 }
 
 class _RevenueAreaChart extends StatefulWidget {
-  const _RevenueAreaChart({required this.data});
+  const _RevenueAreaChart({required this.data, required this.palette});
   final List<MonthlyRevenue> data;
+  final AppPalette palette;
 
   @override
   State<_RevenueAreaChart> createState() => _RevenueAreaChartState();
@@ -352,7 +415,7 @@ class _RevenueAreaChartState extends State<_RevenueAreaChart>
               show: true,
               drawVerticalLine: false,
               getDrawingHorizontalLine: (_) =>
-                  FlLine(color: Colors.white.withOpacity(0.05), strokeWidth: 1),
+                  FlLine(color: Colors.white.withValues(alpha: 0.05), strokeWidth: 1),
             ),
             borderData: FlBorderData(show: false),
             titlesData: FlTitlesData(
@@ -394,8 +457,8 @@ class _RevenueAreaChartState extends State<_RevenueAreaChart>
                   if (i >= data.length) return null;
                   return LineTooltipItem(
                     'PKR ${NumberFormat('#,###').format(data[i].revenue)}\n${data[i].count} sold',
-                    const TextStyle(
-                        color: _cyan,
+                    TextStyle(
+                        color: widget.palette.accent,
                         fontSize: 11,
                         fontWeight: FontWeight.w600),
                   );
@@ -407,13 +470,13 @@ class _RevenueAreaChartState extends State<_RevenueAreaChart>
                 spots: spots,
                 isCurved: true,
                 curveSmoothness: 0.4,
-                color: _cyan,
+                color: widget.palette.accent,
                 barWidth: 2.5,
                 dotData: FlDotData(
                   show: true,
                   getDotPainter: (_, __, ___, ____) => FlDotCirclePainter(
                     radius: 3.5,
-                    color: _cyan,
+                    color: widget.palette.accent,
                     strokeWidth: 2,
                     strokeColor: Colors.black87,
                   ),
@@ -422,8 +485,8 @@ class _RevenueAreaChartState extends State<_RevenueAreaChart>
                   show: true,
                   gradient: LinearGradient(
                     colors: [
-                      _cyan.withOpacity(0.22),
-                      _cyan.withOpacity(0.0)
+                      widget.palette.accent.withValues(alpha: 0.22),
+                      widget.palette.accent.withValues(alpha: 0.0)
                     ],
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
@@ -468,16 +531,16 @@ class _InventoryDonutChartState extends State<_InventoryDonutChart>
     super.dispose();
   }
 
-  Color _colorFor(String status) {
+  Color _colorFor(String status, AppPalette palette) {
     switch (status) {
       case 'available':
-        return _emerald;
+        return palette.statusAvailable;
       case 'reserved':
-        return _amber;
+        return palette.statusReserved;
       case 'sold':
-        return _rose;
+        return palette.statusSold;
       default:
-        return Colors.white24;
+        return palette.textMuted;
     }
   }
 
@@ -511,7 +574,7 @@ class _InventoryDonutChartState extends State<_InventoryDonutChart>
                   ),
                   sections: data.asMap().entries.map((e) {
                     final isTouched = _touchedIndex == e.key;
-                    final color = _colorFor(e.value.status);
+                    final color = _colorFor(e.value.status, palette);
                     final pct =
                         total == 0 ? 0.0 : e.value.count / total * 100;
                     return PieChartSectionData(
@@ -522,7 +585,7 @@ class _InventoryDonutChartState extends State<_InventoryDonutChart>
                       borderSide: isTouched
                           ? BorderSide(color: color, width: 2)
                           : BorderSide(
-                              color: color.withOpacity(0.3), width: 0.5),
+                              color: color.withValues(alpha: 0.3), width: 0.5),
                       badgeWidget: isTouched
                           ? Container(
                               padding: const EdgeInsets.symmetric(
@@ -532,7 +595,7 @@ class _InventoryDonutChartState extends State<_InventoryDonutChart>
                                 borderRadius: BorderRadius.circular(6),
                                 boxShadow: [
                                   BoxShadow(
-                                      color: color.withOpacity(0.5),
+                                      color: color.withValues(alpha: 0.5),
                                       blurRadius: 8)
                                 ],
                               ),
@@ -567,7 +630,7 @@ class _InventoryDonutChartState extends State<_InventoryDonutChart>
                           Container(
                             width: 10, height: 10,
                             decoration: BoxDecoration(
-                              color: _colorFor(b.status),
+                              color: _colorFor(b.status, palette),
                               borderRadius: BorderRadius.circular(3),
                             ),
                           ),
@@ -586,8 +649,8 @@ class _InventoryDonutChartState extends State<_InventoryDonutChart>
                                 Text(
                                   '${b.count} (${pct.toStringAsFixed(0)}%)',
                                   style: AppTextStyles.caption.copyWith(
-                                      color: _colorFor(b.status)
-                                          .withOpacity(0.8),
+                                      color: _colorFor(b.status, palette)
+                                          .withValues(alpha: 0.8),
                                       fontSize: 10),
                                 ),
                               ],
@@ -667,7 +730,7 @@ class _ChartSkeletonState extends State<_ChartSkeleton>
       animation: _pulse,
       builder: (_, __) => Container(
         decoration: BoxDecoration(
-          color: palette.surface.withOpacity(_pulse.value),
+          color: palette.surface.withValues(alpha: _pulse.value),
           borderRadius: BorderRadius.circular(AppDimensions.radiusS),
         ),
       ),
@@ -734,7 +797,7 @@ class _MetricsSkeletonState extends State<_MetricsSkeleton>
                 child: Container(
                   height: 132,
                   decoration: BoxDecoration(
-                    color: palette.surface.withOpacity(_pulse.value),
+                    color: palette.surface.withValues(alpha: _pulse.value),
                     borderRadius:
                         BorderRadius.circular(AppDimensions.radiusL),
                     border: Border.all(color: palette.border),
@@ -761,9 +824,9 @@ class _MetricsError extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(AppDimensions.paddingXL),
       decoration: BoxDecoration(
-        color: palette.error.withOpacity(0.06),
+        color: palette.error.withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(AppDimensions.radiusL),
-        border: Border.all(color: palette.error.withOpacity(0.25)),
+        border: Border.all(color: palette.error.withValues(alpha: 0.25)),
       ),
       child: Column(
         children: [
@@ -781,10 +844,10 @@ class _MetricsError extends StatelessWidget {
           TextButton.icon(
             onPressed: onRetry,
             icon: const Icon(Icons.refresh_rounded,
-                size: 16, color: AppColors.pastelPink),
+                size: 16, color: AppColors.ambientBlue),
             label: Text('Retry',
                 style: AppTextStyles.body.copyWith(
-                    color: AppColors.pastelPink)),
+                    color: AppColors.ambientBlue)),
           ),
         ],
       ),

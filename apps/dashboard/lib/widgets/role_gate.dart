@@ -59,7 +59,7 @@ class RequireRole extends RoleGate {
   }) => RoleGate(
     key: key,
     allowed: [role],
-    child: child,
     fallback: fallback,
+    child: child,
   );
 }

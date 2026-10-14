@@ -6,7 +6,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared/shared.dart';
 
-import 'package:dashboard/features/inventory/models/car_model.dart';
 import 'package:dashboard/features/inventory/providers/inventory_providers.dart';
 import 'package:dashboard/features/inventory/providers/bulk_actions_provider.dart';
 import 'package:dashboard/features/inventory/presentation/vehicle_form_v2.dart';
@@ -75,7 +74,7 @@ class _InventoryGridScreenState extends ConsumerState<InventoryGridScreen> {
                 );
               },
               loading: () => const Center(
-                  child: CircularProgressIndicator(color: AppColors.pastelPink)),
+                  child: CircularProgressIndicator(color: AppColors.ambientBlue)),
               error: (err, _) => _ErrorState(
                 message: err.toString(),
                 onRetry: () => ref.read(inventoryListProvider.notifier).refresh(),
@@ -117,7 +116,7 @@ class _Header extends ConsumerWidget {
           icon: const Icon(Icons.add_rounded, size: 18),
           label: const Text('Add Vehicle'),
           style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.pastelPink,
+            backgroundColor: AppColors.ambientBlue,
             foregroundColor: AppColors.navyBackground,
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
             shape: RoundedRectangleBorder(
@@ -155,7 +154,7 @@ class _FilterBar extends ConsumerWidget {
               prefixIcon:
                   const Icon(Icons.search_rounded, color: Colors.white30, size: 18),
               filled: true,
-              fillColor: AppColors.navySurface.withOpacity(0.5),
+              fillColor: AppColors.navySurface.withValues(alpha: 0.5),
               border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(AppDimensions.radiusS),
                   borderSide: BorderSide(color: AppColors.navyBorder)),
@@ -164,7 +163,7 @@ class _FilterBar extends ConsumerWidget {
                   borderSide: BorderSide(color: AppColors.navyBorder)),
               focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(AppDimensions.radiusS),
-                  borderSide: const BorderSide(color: AppColors.pastelPink)),
+                  borderSide: const BorderSide(color: AppColors.ambientBlue)),
             ),
           ),
         ),
@@ -179,14 +178,14 @@ class _FilterBar extends ConsumerWidget {
               selected: isActive,
               onSelected: (_) =>
                   ref.read(inventoryStatusFilterProvider.notifier).state = status,
-              selectedColor: AppColors.pastelPink.withOpacity(0.2),
-              backgroundColor: AppColors.navySurface.withOpacity(0.5),
+              selectedColor: AppColors.ambientBlue.withValues(alpha: 0.2),
+              backgroundColor: AppColors.navySurface.withValues(alpha: 0.5),
               side: BorderSide(
                   color: isActive
-                      ? AppColors.pastelPink.withOpacity(0.5)
+                      ? AppColors.ambientBlue.withValues(alpha: 0.5)
                       : AppColors.navyBorder),
               labelStyle: AppTextStyles.caption.copyWith(
-                  color: isActive ? AppColors.pastelPink : Colors.white54,
+                  color: isActive ? AppColors.ambientBlue : Colors.white54,
                   fontSize: 12),
             ),
           );
@@ -235,9 +234,9 @@ class _BulkActionBar extends ConsumerWidget {
       padding: const EdgeInsets.symmetric(
           horizontal: AppDimensions.paddingM, vertical: 10),
       decoration: BoxDecoration(
-        color: AppColors.pastelPink.withOpacity(0.08),
+        color: AppColors.ambientBlue.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(AppDimensions.radiusS),
-        border: Border.all(color: AppColors.pastelPink.withOpacity(0.3)),
+        border: Border.all(color: AppColors.ambientBlue.withValues(alpha: 0.3)),
       ),
       child: Row(
         children: [
@@ -313,7 +312,7 @@ class _InventoryGridBody extends ConsumerWidget {
         if (i >= cars.length) {
           return const Center(
               child: CircularProgressIndicator(
-                  color: AppColors.pastelPink, strokeWidth: 2));
+                  color: AppColors.ambientBlue, strokeWidth: 2));
         }
         return _VehicleCard(car: cars[i]);
       },
@@ -351,16 +350,16 @@ class _VehicleCard extends ConsumerWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.navySurface.withOpacity(0.5),
+        color: AppColors.navySurface.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(AppDimensions.radiusL),
         border: Border.all(
           color: isSelected
-              ? AppColors.pastelPink.withOpacity(0.6)
-              : AppColors.navyBorder.withOpacity(0.6),
+              ? AppColors.ambientBlue.withValues(alpha: 0.6)
+              : AppColors.navyBorder.withValues(alpha: 0.6),
         ),
         boxShadow: [
           BoxShadow(
-              color: Colors.black.withOpacity(0.3),
+              color: Colors.black.withValues(alpha: 0.3),
               blurRadius: 16,
               offset: const Offset(0, 5)),
         ],
@@ -401,7 +400,7 @@ class _VehicleCard extends ConsumerWidget {
                             ? Icons.check_box_rounded
                             : Icons.check_box_outline_blank_rounded,
                         size: 18,
-                        color: isSelected ? AppColors.pastelPink : Colors.white54,
+                        color: isSelected ? AppColors.ambientBlue : Colors.white54,
                       ),
                     ),
                   ),
@@ -414,7 +413,7 @@ class _VehicleCard extends ConsumerWidget {
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.6),
+                      color: Colors.black.withValues(alpha: 0.6),
                       borderRadius:
                           BorderRadius.circular(AppDimensions.radiusFull)),
                   child: Text(
@@ -466,11 +465,11 @@ class _VehicleCard extends ConsumerWidget {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 8, vertical: 3),
                       decoration: BoxDecoration(
-                        color: _statusColor(car.status).withOpacity(0.14),
+                        color: _statusColor(car.status).withValues(alpha: 0.14),
                         borderRadius:
                             BorderRadius.circular(AppDimensions.radiusFull),
                         border: Border.all(
-                            color: _statusColor(car.status).withOpacity(0.4)),
+                            color: _statusColor(car.status).withValues(alpha: 0.4)),
                       ),
                       child: Text(
                         car.status[0].toUpperCase() + car.status.substring(1),
@@ -493,7 +492,7 @@ class _VehicleCard extends ConsumerWidget {
                     _IconBtn(
                       icon: Icons.qr_code_2_rounded,
                       tooltip: 'Window Sticker / QR',
-                      color: AppColors.pastelPink.withOpacity(0.8),
+                      color: AppColors.ambientBlue.withValues(alpha: 0.8),
                       onPressed: () async {
                         try {
                           await const WindowStickerPdfService().printSticker(
@@ -534,24 +533,31 @@ class _VehicleCard extends ConsumerWidget {
           'Permanently removes this vehicle and all its photos. Cannot be undone.',
     );
     if (!confirmed) return;
+    // Grid may have rebuilt (search/sort/refresh) while the dialog was open —
+    // using `ref` on a disposed element throws, so re-check before using it.
+    if (!context.mounted) return;
 
-    final service = ref.read(inventoryServiceProvider);
-    if (service == null) return;
-
-    final ok = await service.deleteCar(car.id);
-
-    if (ok) {
-      // Remove from UI list — guarded against empty/out-of-bounds in notifier.
-      ref.read(inventoryListProvider.notifier).removeCars({car.id});
-    } else if (context.mounted) {
+    try {
+      await ref.read(inventoryListProvider.notifier).deleteCar(car.id);
+      if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Delete failed. Please try again.')),
+        const SnackBar(content: Text('Vehicle deleted')),
+      );
+    } catch (e) {
+      // Never let a failed delete (RLS block, network error, etc.) bubble up
+      // as an unhandled exception — surface it instead of crashing the app.
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to delete: $e'),
+          backgroundColor: AppColors.error,
+        ),
       );
     }
   }
 
   Widget _placeholder() => Container(
-        color: AppColors.navyBorder.withOpacity(0.4),
+        color: AppColors.navyBorder.withValues(alpha: 0.4),
         child: const Center(
             child: Icon(Icons.directions_car_rounded,
                 color: Colors.white24, size: 32)),
@@ -612,7 +618,7 @@ class _EmptyState extends ConsumerWidget {
             icon: const Icon(Icons.add_rounded, size: 18),
             label: const Text('Add Vehicle'),
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.pastelPink,
+              backgroundColor: AppColors.ambientBlue,
               foregroundColor: AppColors.navyBackground,
             ),
           ),
@@ -649,9 +655,9 @@ class _ErrorState extends StatelessWidget {
           TextButton.icon(
             onPressed: onRetry,
             icon: const Icon(Icons.refresh_rounded,
-                size: 16, color: AppColors.pastelPink),
+                size: 16, color: AppColors.ambientBlue),
             label: Text('Retry',
-                style: AppTextStyles.body.copyWith(color: AppColors.pastelPink)),
+                style: AppTextStyles.body.copyWith(color: AppColors.ambientBlue)),
           ),
         ],
       ),

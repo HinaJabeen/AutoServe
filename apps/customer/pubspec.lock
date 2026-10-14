@@ -198,6 +198,14 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
+  flutter_card_swiper:
+    dependency: "direct main"
+    description:
+      name: flutter_card_swiper
+      sha256: "895c6974729b51cf73a35f1b58ab57a0af3293131319e2cbccac3bc57ffcd69f"
+      url: "https://pub.dev"
+    source: hosted
+    version: "7.2.0"
   flutter_dotenv:
     dependency: "direct main"
     description:
@@ -632,13 +640,13 @@ packages:
     source: path
     version: "0.0.1"
   shared_preferences:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: shared_preferences
-      sha256: c3025c5534b01739267eb7d76959bbc25a6d10f6988e1c2a3036940133dd10bf
+      sha256: "1e85e0dccf5b4a016077fea7dfbb4a7cb39c759ac1596fcf60c06deadb7da91f"
       url: "https://pub.dev"
     source: hosted
-    version: "2.5.5"
+    version: "2.5.6"
   shared_preferences_android:
     dependency: transitive
     description:
@@ -933,5 +941,5 @@ packages:
     source: hosted
     version: "2.1.1"
 sdks:
-  dart: ">=3.10.8 <4.0.0"
-  flutter: ">=3.38.1"
+  dart: ">=3.11.0 <4.0.0"
+  flutter: ">=3.41.0"

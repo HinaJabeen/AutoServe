@@ -13,7 +13,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:shared/shared.dart';
 
-import 'package:dashboard/features/inventory/models/car_model.dart';
 import 'package:dashboard/features/inventory/providers/vehicle_form_provider.dart';
 import 'package:dashboard/features/inventory/providers/inventory_providers.dart';
 
@@ -204,7 +203,7 @@ class _VehicleFormV2State extends ConsumerState<VehicleFormV2> {
         width: 720,
         constraints: const BoxConstraints(maxHeight: 780),
         decoration: BoxDecoration(
-          color: AppColors.navySurface.withOpacity(0.97),
+          color: AppColors.navySurface.withValues(alpha: 0.97),
           borderRadius: BorderRadius.circular(AppDimensions.radiusL),
           border: Border.all(color: AppColors.navyBorder),
         ),
@@ -226,7 +225,7 @@ class _VehicleFormV2State extends ConsumerState<VehicleFormV2> {
                 ],
               ),
             ),
-            Divider(color: AppColors.navyBorder.withOpacity(0.6), height: 1),
+            Divider(color: AppColors.navyBorder.withValues(alpha: 0.6), height: 1),
             Flexible(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.all(AppDimensions.paddingL),
@@ -252,7 +251,7 @@ class _VehicleFormV2State extends ConsumerState<VehicleFormV2> {
                               height: 44,
                               child: ElevatedButton(
                                 onPressed: formState.isDecodingVin ? null : _decodeVin,
-                                style: ElevatedButton.styleFrom(backgroundColor: AppColors.pastelPink, foregroundColor: AppColors.navyBackground),
+                                style: ElevatedButton.styleFrom(backgroundColor: AppColors.ambientBlue, foregroundColor: AppColors.navyBackground),
                                 child: formState.isDecodingVin
                                     ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2))
                                     : const Text('Decode'),
@@ -371,7 +370,7 @@ class _VehicleFormV2State extends ConsumerState<VehicleFormV2> {
                         contentPadding: EdgeInsets.zero,
                         value: _isPublic,
                         onChanged: (v) => setState(() => _isPublic = v),
-                        activeColor: AppColors.pastelPink,
+                        activeThumbColor: AppColors.ambientBlue,
                         title: Text('Visible in customer app', style: AppTextStyles.body.copyWith(color: Colors.white70, fontSize: 13)),
                       ),
                       const SizedBox(height: AppDimensions.paddingM),
@@ -386,9 +385,9 @@ class _VehicleFormV2State extends ConsumerState<VehicleFormV2> {
                         Container(
                           padding: const EdgeInsets.all(AppDimensions.paddingM),
                           decoration: BoxDecoration(
-                            color: AppColors.error.withOpacity(0.08),
+                            color: AppColors.error.withValues(alpha: 0.08),
                             borderRadius: BorderRadius.circular(AppDimensions.radiusS),
-                            border: Border.all(color: AppColors.error.withOpacity(0.3)),
+                            border: Border.all(color: AppColors.error.withValues(alpha: 0.3)),
                           ),
                           child: Text(formState.errorMessage!, style: AppTextStyles.caption.copyWith(color: AppColors.error)),
                         ),
@@ -398,7 +397,7 @@ class _VehicleFormV2State extends ConsumerState<VehicleFormV2> {
                 ),
               ),
             ),
-            Divider(color: AppColors.navyBorder.withOpacity(0.6), height: 1),
+            Divider(color: AppColors.navyBorder.withValues(alpha: 0.6), height: 1),
             Padding(
               padding: const EdgeInsets.all(AppDimensions.paddingM),
               child: Row(
@@ -410,7 +409,7 @@ class _VehicleFormV2State extends ConsumerState<VehicleFormV2> {
                     height: 42,
                     child: ElevatedButton(
                       onPressed: busy ? null : _handleSubmit,
-                      style: ElevatedButton.styleFrom(backgroundColor: AppColors.pastelPink, foregroundColor: AppColors.navyBackground),
+                      style: ElevatedButton.styleFrom(backgroundColor: AppColors.ambientBlue, foregroundColor: AppColors.navyBackground),
                       child: busy
                           ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
                           : Text(_isEditMode ? 'Save Changes' : 'Add Vehicle'),
@@ -451,7 +450,7 @@ class _VehicleFormV2State extends ConsumerState<VehicleFormV2> {
           style: AppTextStyles.body.copyWith(color: Colors.white, fontSize: 13),
           decoration: InputDecoration(
             filled: true,
-            fillColor: Colors.white.withOpacity(0.04),
+            fillColor: Colors.white.withValues(alpha: 0.04),
             counterText: '',
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppDimensions.radiusS), borderSide: BorderSide(color: AppColors.navyBorder)),
           ),
@@ -467,17 +466,17 @@ class _VehicleFormV2State extends ConsumerState<VehicleFormV2> {
         Text(label, style: AppTextStyles.caption.copyWith(color: Colors.white38, fontSize: 11)),
         const SizedBox(height: 6),
         DropdownButtonFormField<String>(
-          // `value` is guaranteed to be either null or a member of `items`
-          // (both draw from the same schema-matched constant lists), which
-          // is what avoids the dropdown assertion error from before.
-          value: value != null && items.contains(value) ? value : null,
+          // `initialValue` is guaranteed to be either null or a member of
+          // `items` (both draw from the same schema-matched constant lists),
+          // which is what avoids the dropdown assertion error from before.
+          initialValue: value != null && items.contains(value) ? value : null,
           isExpanded: true,
           dropdownColor: AppColors.navySurface,
           style: AppTextStyles.body.copyWith(color: Colors.white, fontSize: 13),
           validator: (v) => v == null ? 'Required' : null,
           decoration: InputDecoration(
             filled: true,
-            fillColor: Colors.white.withOpacity(0.04),
+            fillColor: Colors.white.withValues(alpha: 0.04),
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppDimensions.radiusS), borderSide: BorderSide(color: AppColors.navyBorder)),
           ),
           items: items.map((item) => DropdownMenuItem(value: item, child: Text(_titleCase(item)))).toList(),

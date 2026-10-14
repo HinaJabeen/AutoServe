@@ -21,9 +21,12 @@ class AppTheme {
       colorScheme: ColorScheme(
         brightness: brightness,
         primary: p.accent,
-        onPrimary: p.background,
+        // Ambient Blue (#0066FF) is a consistent mid-dark hue in both themes
+        // (unlike the old cyan-in-dark/amber-in-light accent), so button text
+        // stays white regardless of theme rather than flipping to p.background.
+        onPrimary: Colors.white,
         secondary: p.accentSecondary,
-        onSecondary: p.background,
+        onSecondary: Colors.white,
         error: p.error,
         onError: Colors.white,
         surface: p.surface,
@@ -37,7 +40,7 @@ class AppTheme {
         titleTextStyle: AppTextStyles.heading2.copyWith(
             color: p.textPrimary, fontSize: 18),
       ),
-      dialogBackgroundColor: p.card,
+      dialogTheme: DialogThemeData(backgroundColor: p.card),
       cardColor: p.card,
       dividerColor: p.border,
       inputDecorationTheme: InputDecorationTheme(
@@ -66,7 +69,7 @@ class AppTheme {
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: p.accent,
-          foregroundColor: p.background,
+          foregroundColor: Colors.white,
           elevation: 0,
           shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(AppDimensions.radiusS)),
@@ -80,7 +83,7 @@ class AppTheme {
       iconTheme: IconThemeData(color: p.textSecondary),
       chipTheme: ChipThemeData(
         backgroundColor: p.surface,
-        selectedColor: p.accent.withOpacity(0.2),
+        selectedColor: p.accent.withValues(alpha: 0.2),
         labelStyle: AppTextStyles.caption.copyWith(color: p.textSecondary),
         side: BorderSide(color: p.border),
         shape: RoundedRectangleBorder(

@@ -7,7 +7,6 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shared/shared.dart';
 import 'package:dashboard/core/router/app_router.dart';
 import 'package:dashboard/theme/theme_provider.dart';
 import 'package:dashboard/theme/app_theme.dart';
@@ -25,7 +24,7 @@ class AutoServeDashboardApp extends ConsumerWidget {
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light(),
       darkTheme: AppTheme.dark(),
-      themeMode: themeMode == AppThemeMode.dark ? ThemeMode.dark : ThemeMode.light,
+      themeMode: themeMode,
       routerConfig: router,
     );
   }

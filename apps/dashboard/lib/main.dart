@@ -14,7 +14,7 @@ Future<void> main() async {
   await dotenv.load();
   await Supabase.initialize(
     url: dotenv.env['SUPABASE_URL'] ?? '',
-    anonKey: dotenv.env['SUPABASE_ANON_KEY'] ?? '',
+    publishableKey: dotenv.env['SUPABASE_ANON_KEY'] ?? '',
   );
   runApp(const ProviderScope(child: AutoServeDashboard()));
 }
@@ -46,15 +46,15 @@ class AutoServeDashboard extends ConsumerWidget {
       useMaterial3: true,
       scaffoldBackgroundColor: palette.background,
       colorScheme: ColorScheme.fromSeed(
-        seedColor: AppColors.pastelPink,
+        seedColor: palette.accent,
         brightness: brightness,
       ),
       extensions: [palette],
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: isDark
-            ? Colors.white.withOpacity(0.04)
-            : Colors.black.withOpacity(0.04),
+            ? Colors.white.withValues(alpha: 0.04)
+            : Colors.black.withValues(alpha: 0.04),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppDimensions.radiusS),
           borderSide: BorderSide(color: palette.border),
@@ -68,11 +68,11 @@ class AutoServeDashboard extends ConsumerWidget {
           borderSide: BorderSide(color: palette.accent, width: 1.4),
         ),
       ),
-      dialogBackgroundColor: palette.surface,
+      dialogTheme: DialogThemeData(backgroundColor: palette.surface),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.pastelPink,
-          foregroundColor: AppColors.navyBackground,
+          backgroundColor: palette.accent,
+          foregroundColor: Colors.white,
           shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(AppDimensions.radiusS)),
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),

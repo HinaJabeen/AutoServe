@@ -14,6 +14,8 @@ import 'auth_provider.dart';
 
 // ─── Models ──────────────────────────────────────────────────────────────────
 
+const _closedLeadStages = {'closed_won', 'closed_lost'};
+
 class DashboardMetrics {
   const DashboardMetrics({
     required this.totalVehicles,
@@ -21,12 +23,21 @@ class DashboardMetrics {
     required this.reservedVehicles,
     required this.newLeadsToday,
     required this.soldVehicles,
+    required this.soldThisMonth,
+    required this.activeLeadsCount,
+    required this.grossStockValue,
   });
   final int totalVehicles;
   final int availableVehicles;
   final int reservedVehicles;
   final int newLeadsToday;
   final int soldVehicles;
+  /// Cars marked `sold` with `updated_at` in the current calendar month.
+  final int soldThisMonth;
+  /// Leads not yet in a closed stage (`closed_won`/`closed_lost`).
+  final int activeLeadsCount;
+  /// sum(price) across all `available` cars — the dealer's current stock value.
+  final double grossStockValue;
 }
 
 class MonthlyRevenue {
@@ -117,14 +128,25 @@ final dashboardMetricsProvider = Provider<AsyncValue<DashboardMetrics>>((ref) {
 
   final cars  = carsAsync.value  ?? [];
   final leads = leadsAsync.value ?? [];
-  final now        = DateTime.now();
-  final startOfDay = DateTime(now.year, now.month, now.day);
+  final now          = DateTime.now();
+  final startOfDay   = DateTime(now.year, now.month, now.day);
+  final startOfMonth = DateTime(now.year, now.month, 1);
 
   return AsyncValue.data(DashboardMetrics(
     totalVehicles:     cars.length,
     availableVehicles: cars.where((c) => _s(c, 'status') == 'available').length,
     reservedVehicles:  cars.where((c) => _s(c, 'status') == 'reserved').length,
     soldVehicles:      cars.where((c) => _s(c, 'status') == 'sold').length,
+    soldThisMonth: cars.where((c) {
+      if (_s(c, 'status') != 'sold') return false;
+      final dt = _dt(c, 'updated_at');
+      return dt != null && !dt.toLocal().isBefore(startOfMonth);
+    }).length,
+    grossStockValue: cars
+        .where((c) => _s(c, 'status') == 'available')
+        .fold(0.0, (sum, c) => sum + _d(c, 'price')),
+    activeLeadsCount:
+        leads.where((l) => !_closedLeadStages.contains(l.status)).length,
     newLeadsToday: leads.where((l) {
       try { return l.createdAt.toLocal().isAfter(startOfDay); } catch (_) { return false; }
     }).length,
@@ -132,32 +154,28 @@ final dashboardMetricsProvider = Provider<AsyncValue<DashboardMetrics>>((ref) {
 });
 
 // ─── Revenue trend ────────────────────────────────────────────────────────────
+// Derived from dealerCarsStreamProvider (not a one-shot query) so it updates
+// live the moment a car's status/price changes, same as the other charts.
 
-final revenueMonthlyProvider = FutureProvider<List<MonthlyRevenue>>((ref) async {
-  final dealerId = ref.watch(currentDealershipIdProvider);
-  if (dealerId == null) return [];
-  final sixMonthsAgo = DateTime.now().subtract(const Duration(days: 180));
-  try {
-    final rows = await Supabase.instance.client
-        .from('cars')
-        .select('price, updated_at')
-        .eq('dealer_id', dealerId)
-        .eq('status', 'sold')
-        .gte('updated_at', sixMonthsAgo.toIso8601String())
-        .order('updated_at', ascending: true);
-
+final revenueMonthlyProvider =
+    Provider<AsyncValue<List<MonthlyRevenue>>>((ref) {
+  final carsAsync = ref.watch(dealerCarsStreamProvider);
+  return carsAsync.whenData((cars) {
+    final sixMonthsAgo = DateTime.now().subtract(const Duration(days: 180));
     final Map<String, ({double revenue, int count})> buckets = {};
-    for (final raw in rows) {
-      final r   = Map<String, dynamic>.from(raw);
-      final dt  = _dt(r, 'updated_at');
-      if (dt == null) continue; // skip rows where updated_at is null
+
+    for (final c in cars) {
+      if (_s(c, 'status') != 'sold') continue;
+      final dt = _dt(c, 'updated_at');
+      if (dt == null || dt.isBefore(sixMonthsAgo)) continue;
       final key = '${dt.year}-${dt.month.toString().padLeft(2, '0')}';
-      final p   = _d(r, 'price');
+      final p   = _d(c, 'price');
       final ex  = buckets[key];
       buckets[key] = ex == null
           ? (revenue: p, count: 1)
           : (revenue: ex.revenue + p, count: ex.count + 1);
     }
+
     return buckets.entries.map((e) {
       final parts = e.key.split('-');
       return MonthlyRevenue(
@@ -166,9 +184,20 @@ final revenueMonthlyProvider = FutureProvider<List<MonthlyRevenue>>((ref) async 
         count:   e.value.count,
       );
     }).toList()..sort((a, b) => a.month.compareTo(b.month));
-  } catch (_) {
-    return [];
-  }
+  });
+});
+
+// ─── Lead conversion rate ─────────────────────────────────────────────────────
+// Share of leads that closed won, out of all leads — live off the same
+// dealerLeadsStreamProvider the Kanban board already watches.
+
+final leadConversionRateProvider = Provider<AsyncValue<double>>((ref) {
+  final leadsAsync = ref.watch(dealerLeadsStreamProvider);
+  return leadsAsync.whenData((leads) {
+    if (leads.isEmpty) return 0.0;
+    final won = leads.where((l) => l.status == 'closed_won').length;
+    return won / leads.length * 100;
+  });
 });
 
 // ─── Inventory aging ──────────────────────────────────────────────────────────
@@ -205,7 +234,9 @@ final currentDealershipProvider = FutureProvider<DealershipModel?>((ref) async {
 });
 
 void retryDashboardMetrics(WidgetRef ref) {
+  // revenueMonthlyProvider and leadConversionRateProvider are derived from
+  // these two streams, so invalidating the streams is enough to recompute
+  // everything downstream.
   ref.invalidate(dealerCarsStreamProvider);
   ref.invalidate(dealerLeadsStreamProvider);
-  ref.invalidate(revenueMonthlyProvider);
 }

@@ -14,7 +14,14 @@ Future<bool> confirmDelete(
   final result = await showDialog<bool>(
     context: context,
     barrierDismissible: false,
-    builder: (_) => AlertDialog(
+    // `showDialog` defaults to `useRootNavigator: true`, pushing this route
+    // onto the app's root Navigator. Popping must go through THIS builder's
+    // own `dialogContext` — using the outer `context` instead finds the
+    // nearest enclosing Navigator (the GoRouter ShellRoute's nested one under
+    // this app's router setup), which pops the underlying page out from under
+    // GoRouter's own state instead of closing the dialog, desyncing the route
+    // stack and blanking the screen.
+    builder: (dialogContext) => AlertDialog(
       backgroundColor: AppColors.navySurface,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppDimensions.radiusL)),
       title: Row(
@@ -27,11 +34,11 @@ Future<bool> confirmDelete(
       content: Text(message, style: AppTextStyles.body.copyWith(color: Colors.white60, fontSize: 13.5)),
       actions: [
         TextButton(
-          onPressed: () => Navigator.of(context).pop(false),
+          onPressed: () => Navigator.of(dialogContext).pop(false),
           child: Text('Cancel', style: AppTextStyles.body.copyWith(color: Colors.white54)),
         ),
         ElevatedButton(
-          onPressed: () => Navigator.of(context).pop(true),
+          onPressed: () => Navigator.of(dialogContext).pop(true),
           style: ElevatedButton.styleFrom(
             backgroundColor: AppColors.error,
             foregroundColor: Colors.white,

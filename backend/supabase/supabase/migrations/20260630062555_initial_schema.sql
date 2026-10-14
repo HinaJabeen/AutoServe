@@ -1,14 +1,18 @@
 -- ============================================
--- AUTOSERVE INITIAL SCHEMA
+-- AUTOSERVE SCHEMA — reconciled against live Supabase tables
 -- ============================================
+-- Supersedes the earlier version of this migration, which modeled a
+-- `vehicles` + generic `users` schema that does not match production.
+-- The live tables are: dealers, dealer_staff, cars, car_photos,
+-- car_audit_logs, leads, lead_activity, notifications, staff_invites,
+-- admin_users, admin_activity, ai_usage_log. See docs/architecture.md §4.
 
--- Enable UUID extension
 create extension if not exists "uuid-ossp";
 
 -- ============================================
--- DEALERSHIPS
+-- DEALERS (tenant dealership accounts)
 -- ============================================
-create table dealerships (
+create table dealers (
   id uuid primary key default gen_random_uuid(),
   name text not null,
   owner_name text not null,
@@ -24,98 +28,141 @@ create table dealerships (
 );
 
 -- ============================================
--- USERS (extends Supabase auth.users)
+-- DEALER STAFF (staff profiles linked to dealers and Supabase Auth)
 -- ============================================
-create table users (
-  id uuid primary key references auth.users(id) on delete cascade,
-  email text unique not null,
+create table dealer_staff (
+  id uuid primary key default gen_random_uuid(),
+  dealer_id uuid not null references dealers(id) on delete cascade,
+  user_id uuid not null references auth.users(id) on delete cascade,
   full_name text not null,
-  phone text,
-  role text not null
-    check (role in ('super_admin', 'dealer_owner', 
-                    'salesperson', 'consumer')),
-  dealership_id uuid references dealerships(id),
-  avatar_url text,
-  is_active boolean default true,
+  role text not null default 'staff'
+    check (role in ('owner', 'staff')),
+  status text not null default 'active'
+    check (status in ('active', 'deactivated')),
+  requires_password_change boolean not null default true,
   created_at timestamptz default now(),
-  updated_at timestamptz default now()
+  updated_at timestamptz default now(),
+  unique (user_id)
 );
 
--- ============================================
--- VEHICLES
--- ============================================
-create table vehicles (
-  id uuid primary key default gen_random_uuid(),
-  dealership_id uuid not null references dealerships(id) on delete cascade,
-  make text not null,
-  model text not null,
-  year integer not null check (year >= 1980 and year <= 2030),
-  color text,
-  mileage integer not null check (mileage >= 0),
-  price numeric(12,2) not null check (price > 0),
-  condition text check (condition in ('new', 'used', 'certified')),
-  fuel_type text check (fuel_type in 
-    ('petrol', 'diesel', 'hybrid', 'electric')),
-  transmission text check (transmission in 
-    ('manual', 'automatic')),
-  body_type text check (body_type in 
-    ('sedan', 'suv', 'hatchback', 'pickup', 
-     'van', 'coupe', 'convertible')),
-  description text,
-  status text default 'available'
-    check (status in ('available', 'reserved', 'sold', 'inactive')),
-  views_count integer default 0,
-  created_at timestamptz default now(),
-  updated_at timestamptz default now()
-);
-
--- Index for common query patterns
-create index idx_vehicles_dealership on vehicles(dealership_id);
-create index idx_vehicles_status on vehicles(status);
-create index idx_vehicles_make_model on vehicles(make, model);
+create index idx_dealer_staff_dealer on dealer_staff(dealer_id);
 
 -- ============================================
--- VEHICLE IMAGES
+-- ADMIN USERS (superadmin / platform-level access)
 -- ============================================
-create table vehicle_images (
-  id uuid primary key default gen_random_uuid(),
-  vehicle_id uuid not null references vehicles(id) on delete cascade,
-  image_url text not null,
-  is_primary boolean default false,
-  display_order integer default 0,
+create table admin_users (
+  id uuid primary key references auth.users(id) on delete cascade,
+  full_name text not null,
+  role text not null default 'super_admin'
+    check (role in ('super_admin')),
   created_at timestamptz default now()
 );
 
-create index idx_vehicle_images_vehicle on vehicle_images(vehicle_id);
+-- ============================================
+-- CARS (inventory vehicles belonging to a dealership)
+-- ============================================
+create table cars (
+  id uuid primary key default gen_random_uuid(),
+  dealer_id uuid not null references dealers(id) on delete cascade,
+  make text not null,
+  model text not null,
+  year integer not null check (year >= 1980 and year <= 2030),
+  price numeric(12,2) not null check (price > 0),
+  status text default 'available'
+    check (status in ('available', 'reserved', 'sold', 'inactive')),
+  mileage integer check (mileage >= 0),
+  color text,
+  transmission text check (transmission in ('manual', 'automatic')),
+  fuel_type text check (fuel_type in
+    ('petrol', 'diesel', 'hybrid', 'electric')),
+  condition text check (condition in ('new', 'used', 'certified')),
+  specs jsonb not null default '{}'::jsonb,
+  purchase_price numeric(12,2),
+  retail_price numeric(12,2),
+  is_public boolean not null default true,
+  features text[] not null default '{}'::text[],
+  reconditioning_notes text,
+  created_by uuid references auth.users(id) on delete set null,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+
+create index idx_cars_dealer on cars(dealer_id);
+create index idx_cars_status on cars(status);
+create index idx_cars_make_model on cars(make, model);
 
 -- ============================================
--- LEADS
+-- CAR PHOTOS (storage URLs and metadata for vehicle images)
+-- ============================================
+create table car_photos (
+  id uuid primary key default gen_random_uuid(),
+  car_id uuid not null references cars(id) on delete cascade,
+  storage_path text not null,
+  is_primary boolean not null default false,
+  display_order integer not null default 0,
+  created_at timestamptz default now()
+);
+
+create index idx_car_photos_car on car_photos(car_id);
+
+-- ============================================
+-- CAR AUDIT LOGS (history/audit trail for inventory actions)
+-- ============================================
+create table car_audit_logs (
+  id uuid primary key default gen_random_uuid(),
+  car_id uuid not null references cars(id) on delete cascade,
+  actor_id uuid references auth.users(id) on delete set null,
+  action text not null,
+  old_value jsonb,
+  new_value jsonb,
+  created_at timestamptz default now()
+);
+
+create index idx_car_audit_logs_car on car_audit_logs(car_id);
+
+-- ============================================
+-- LEADS (CRM inquiries and sales pipeline leads)
 -- ============================================
 create table leads (
   id uuid primary key default gen_random_uuid(),
-  dealership_id uuid not null references dealerships(id) on delete cascade,
-  vehicle_id uuid references vehicles(id) on delete set null,
-  consumer_id uuid references users(id),
-  consumer_name text not null,
-  consumer_phone text,
-  consumer_email text,
-  type text check (type in ('inquiry', 'test_drive')),
-  status text default 'new'
-    check (status in ('new', 'contacted', 'closed_won', 'closed_lost')),
+  dealer_id uuid not null references dealers(id) on delete cascade,
+  car_id uuid references cars(id) on delete set null,
+  customer_name text not null,
+  customer_phone text,
+  -- Intake channel, e.g. 'walk_in', 'online'. See lead_provider.dart comments.
+  source text,
+  stage text not null default 'new'
+    check (stage in
+      ('new', 'contacted', 'test_drive_scheduled', 'negotiating',
+       'closed_won', 'closed_lost')),
   notes text,
   created_at timestamptz default now(),
   updated_at timestamptz default now()
 );
 
-create index idx_leads_dealership on leads(dealership_id);
-create index idx_leads_status on leads(status);
+create index idx_leads_dealer on leads(dealer_id);
+create index idx_leads_stage on leads(stage);
 
 -- ============================================
--- NOTIFICATIONS
+-- LEAD ACTIVITY (interaction history/notes per lead)
+-- ============================================
+create table lead_activity (
+  id uuid primary key default gen_random_uuid(),
+  lead_id uuid not null references leads(id) on delete cascade,
+  actor_id uuid references auth.users(id) on delete set null,
+  activity_type text not null,
+  note text,
+  created_at timestamptz default now()
+);
+
+create index idx_lead_activity_lead on lead_activity(lead_id);
+
+-- ============================================
+-- NOTIFICATIONS (staff and system alerts)
 -- ============================================
 create table notifications (
   id uuid primary key default gen_random_uuid(),
-  user_id uuid not null references users(id) on delete cascade,
+  user_id uuid not null references auth.users(id) on delete cascade,
   title text not null,
   body text not null,
   type text check (type in ('lead', 'system')),
@@ -125,6 +172,53 @@ create table notifications (
 );
 
 create index idx_notifications_user on notifications(user_id, is_read);
+
+-- ============================================
+-- STAFF INVITES (pending invites for team onboarding)
+-- ============================================
+create table staff_invites (
+  id uuid primary key default gen_random_uuid(),
+  dealer_id uuid not null references dealers(id) on delete cascade,
+  email text not null,
+  role text not null default 'staff'
+    check (role in ('owner', 'staff')),
+  invited_by uuid references auth.users(id) on delete set null,
+  status text not null default 'pending'
+    check (status in ('pending', 'accepted', 'revoked', 'expired')),
+  expires_at timestamptz,
+  created_at timestamptz default now()
+);
+
+create index idx_staff_invites_dealer on staff_invites(dealer_id);
+
+-- ============================================
+-- ADMIN ACTIVITY (superadmin audit trail)
+-- ============================================
+create table admin_activity (
+  id uuid primary key default gen_random_uuid(),
+  admin_id uuid references admin_users(id) on delete set null,
+  action text not null,
+  target_table text,
+  target_id uuid,
+  metadata jsonb,
+  created_at timestamptz default now()
+);
+
+create index idx_admin_activity_admin on admin_activity(admin_id);
+
+-- ============================================
+-- AI USAGE LOG (tracking AI/automation operations, e.g. VIN decoding)
+-- ============================================
+create table ai_usage_log (
+  id uuid primary key default gen_random_uuid(),
+  dealer_id uuid references dealers(id) on delete cascade,
+  feature text not null,
+  tokens_used integer,
+  cost numeric(10,4),
+  created_at timestamptz default now()
+);
+
+create index idx_ai_usage_log_dealer on ai_usage_log(dealer_id);
 
 -- ============================================
 -- UPDATED_AT TRIGGER FUNCTION (reusable)
@@ -137,16 +231,16 @@ begin
 end;
 $$ language plpgsql;
 
-create trigger set_updated_at_dealerships
-  before update on dealerships
+create trigger set_updated_at_dealers
+  before update on dealers
   for each row execute function update_updated_at_column();
 
-create trigger set_updated_at_users
-  before update on users
+create trigger set_updated_at_dealer_staff
+  before update on dealer_staff
   for each row execute function update_updated_at_column();
 
-create trigger set_updated_at_vehicles
-  before update on vehicles
+create trigger set_updated_at_cars
+  before update on cars
   for each row execute function update_updated_at_column();
 
 create trigger set_updated_at_leads

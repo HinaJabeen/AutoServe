@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../theme/app_colors.dart';
 import '../theme/app_dimensions.dart';
+import '../theme/app_palette.dart';
 import '../theme/app_text_styles.dart';
 
 enum AppButtonVariant { primary, secondary, outline }
@@ -23,12 +23,15 @@ class AppButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final p = context.palette;
     final isOutline = variant == AppButtonVariant.outline;
-    final bgColor = variant == AppButtonVariant.primary
-        ? AppColors.primary
-        : variant == AppButtonVariant.secondary
-        ? AppColors.secondary
-        : Colors.transparent;
+    final bgColor = switch (variant) {
+      AppButtonVariant.primary => p.accent,
+      AppButtonVariant.secondary => p.surfaceElevated,
+      AppButtonVariant.outline => Colors.transparent,
+    };
+    final fgColor =
+        variant == AppButtonVariant.primary ? p.onAccent : p.textPrimary;
 
     return SizedBox(
       height: 48,
@@ -36,22 +39,27 @@ class AppButton extends StatelessWidget {
         onPressed: isLoading ? null : onPressed,
         style: ElevatedButton.styleFrom(
           backgroundColor: bgColor,
-          foregroundColor: isOutline ? AppColors.primary : Colors.white,
-          elevation: isOutline ? 0 : 1,
+          foregroundColor: fgColor,
+          // Keep the brand fill while loading instead of Material's default
+          // grey disabled state — the spinner already signals "busy".
+          disabledBackgroundColor:
+              isLoading ? bgColor.withValues(alpha: 0.7) : null,
+          disabledForegroundColor: isLoading ? fgColor : null,
+          elevation: 0,
           side: isOutline
-              ? const BorderSide(color: AppColors.primary, width: 1.5)
+              ? BorderSide(color: p.border, width: 1.5)
               : BorderSide.none,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppDimensions.radiusM),
           ),
         ),
         child: isLoading
-            ? const SizedBox(
+            ? SizedBox(
                 width: 20,
                 height: 20,
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
-                  color: Colors.white,
+                  color: fgColor,
                 ),
               )
             : Row(
@@ -63,9 +71,7 @@ class AppButton extends StatelessWidget {
                   ],
                   Text(
                     label,
-                    style: AppTextStyles.button.copyWith(
-                      color: isOutline ? AppColors.primary : Colors.white,
-                    ),
+                    style: AppTextStyles.button.copyWith(color: fgColor),
                   ),
                 ],
               ),
