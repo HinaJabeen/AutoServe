@@ -1,5 +1,6 @@
 // lib/features/inventory/services/inventory_service.dart
 
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared/shared.dart';
 
@@ -58,9 +59,19 @@ class InventoryService {
     return CarModel.fromJson({...clean, 'photo_urls': photos});
   }
 
+  /// The exact `cars` insert row. `dealer_id` is NOT NULL and always comes
+  /// from the signed-in staff member's dealership, never from the caller.
+  /// `specs` (jsonb — holds body_type, which has no column of its own) is
+  /// only sent when non-empty so the column default applies otherwise.
+  static Map<String, dynamic> buildInsertPayload(CarModel car, String dealerId) => {
+        ...car.toInsertJson(),
+        if (car.specs.isNotEmpty) 'specs': car.specs,
+        'dealer_id': dealerId,
+      };
+
   Future<CarModel> createCar(CarModel car) async {
     try {
-      final payload = car.toInsertJson()..['dealer_id'] = _dealerId;
+      final payload = buildInsertPayload(car, _dealerId);
       final row = await _client.from('cars').insert(payload).select().single();
       return CarModel.fromJson(row);
     } on PostgrestException catch (e) {
@@ -167,8 +178,12 @@ class InventoryService {
   }
 
   String _friendlyDbError(PostgrestException e) {
+    debugPrint('InventoryService: PostgrestException code=${e.code} '
+        'message=${e.message} details=${e.details} hint=${e.hint}');
     final msg = e.message.toLowerCase();
-    if (msg.contains('check constraint')) return 'Invalid value — check dropdown selections.';
+    // Keep the constraint name (e.g. "cars_condition_check") — it says
+    // exactly which field was rejected.
+    if (msg.contains('check constraint')) return 'Invalid value — ${e.message}';
     if (msg.contains('violates row-level security')) return 'Permission denied.';
     return 'Save failed: ${e.message}';
   }

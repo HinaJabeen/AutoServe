@@ -10,6 +10,13 @@ import 'package:flutter/foundation.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+class PhotoUploadException implements Exception {
+  PhotoUploadException(this.message);
+  final String message;
+  @override
+  String toString() => message;
+}
+
 class VehicleStorageService {
   VehicleStorageService(this._client, this._dealerId);
 
@@ -28,75 +35,103 @@ class VehicleStorageService {
   /// callers that need a URL should go through car_photos + getPublicUrl,
   /// same as InventoryService._withPhotoUrls).
   /// Uses uploadBinary (Uint8List) — safe on Flutter Web.
+  ///
+  /// Path layout `dealers/<dealer>/vehicles/<car>/<ts>_<n>.<ext>` matches
+  /// every photo that has successfully landed in the live bucket. The
+  /// original filename is deliberately not used: device names like
+  /// "WhatsApp Image (1).jpeg" or non-ASCII names can be rejected as
+  /// invalid storage keys.
   Future<String> uploadImage({
     required String carId,
     required XFile file,
+    int index = 0,
   }) async {
-    // PART 4 FIX: readAsBytes() works on Web — no dart:io File needed.
     final Uint8List bytes = await file.readAsBytes();
+    final (ext, contentType) = _typeOf(file);
 
-    final path =
-        '$_dealerId/$carId/${DateTime.now().millisecondsSinceEpoch}_${file.name}';
+    final path = 'dealers/$_dealerId/vehicles/$carId/'
+        '${DateTime.now().millisecondsSinceEpoch}_$index.$ext';
 
     await _client.storage.from(_bucket).uploadBinary(
       path,
       bytes,
-      fileOptions: FileOptions(
-        contentType: file.mimeType ?? 'image/jpeg',
-        upsert: false,
-      ),
+      fileOptions: FileOptions(contentType: contentType, upsert: false),
     );
 
     return path;
   }
 
+  static (String, String) _typeOf(XFile file) {
+    final mime = file.mimeType?.toLowerCase();
+    final name = file.name.toLowerCase();
+    if (mime == 'image/png' || name.endsWith('.png')) return ('png', 'image/png');
+    if (mime == 'image/webp' || name.endsWith('.webp')) return ('webp', 'image/webp');
+    if (mime == 'image/gif' || name.endsWith('.gif')) return ('gif', 'image/gif');
+    return ('jpg', 'image/jpeg');
+  }
+
   /// Upload all picked images and insert one car_photos row per upload.
   /// The first photo uploaded for a car with no existing photos is marked
   /// primary; subsequent uploads are appended at the next display_order.
+  ///
+  /// Every file is attempted and every successful upload gets its row; if
+  /// anything failed, throws [PhotoUploadException] afterwards so the caller
+  /// can tell the user instead of the photos silently going missing.
   Future<List<String>> uploadAll({
     required String carId,
     required List<XFile> files,
   }) async {
     final paths = <String>[];
+    final failures = <String>[];
 
-    for (final file in files) {
+    for (final (i, file) in files.indexed) {
       try {
-        final path = await uploadImage(carId: carId, file: file);
-        paths.add(path);
+        paths.add(await uploadImage(carId: carId, file: file, index: i));
       } catch (e) {
-        if (kDebugMode) print('❌ uploadImage failed for ${file.name}: $e');
-        // Continue uploading remaining files — partial success is acceptable.
+        debugPrint('VehicleStorageService: upload failed for ${file.name} — $e');
+        failures.add('${file.name}: $e');
       }
     }
 
-    if (paths.isEmpty) return paths;
-
-    try {
-      final existing = await _client
-          .from('car_photos')
-          .select('id, display_order')
-          .eq('car_id', carId)
-          .order('display_order', ascending: false)
-          .limit(1);
-
-      final hasExisting = existing.isNotEmpty;
-      final nextOrder = hasExisting
-          ? ((existing.first['display_order'] as int?) ?? 0) + 1
-          : 0;
-
-      final rows = paths.asMap().entries.map((e) => {
-            'car_id': carId,
-            'storage_path': e.value,
-            'is_primary': !hasExisting && e.key == 0,
-            'display_order': nextOrder + e.key,
-          }).toList();
-
-      await _client.from('car_photos').insert(rows);
-    } catch (e) {
-      if (kDebugMode) print('❌ inserting car_photos rows: $e');
+    if (paths.isNotEmpty) {
+      try {
+        await _insertPhotoRows(carId, paths);
+      } catch (e) {
+        debugPrint('VehicleStorageService: inserting car_photos rows failed — $e');
+        throw PhotoUploadException(
+            'Photos uploaded but could not be linked to the vehicle: $e');
+      }
     }
 
+    if (failures.isNotEmpty) {
+      throw PhotoUploadException(
+          '${failures.length} of ${files.length} photo(s) failed to upload. '
+          '${failures.first}');
+    }
     return paths;
+  }
+
+  Future<void> _insertPhotoRows(String carId, List<String> paths) async {
+    final existing = await _client
+        .from('car_photos')
+        .select('id, display_order')
+        .eq('car_id', carId)
+        .order('display_order', ascending: false)
+        .limit(1);
+
+    final hasExisting = existing.isNotEmpty;
+    final nextOrder = hasExisting
+        ? ((existing.first['display_order'] as int?) ?? 0) + 1
+        : 0;
+
+    final rows = paths.asMap().entries.map((e) => {
+          'car_id': carId,
+          'storage_path': e.value,
+          'is_primary': !hasExisting && e.key == 0,
+          'display_order': nextOrder + e.key,
+        }).toList();
+
+    await _client.from('car_photos').insert(rows);
   }
 
   /// Delete a single image: removes the storage object and its car_photos row.

@@ -38,12 +38,6 @@ const _stages = [
   _Stage('negotiating',          'Finance & Closing',    Icons.request_quote_outlined),
 ];
 
-// Closed stages rendered as chips below the board, not draggable columns.
-const _closedStages = {
-  'closed_won':  'Won',
-  'closed_lost': 'Lost',
-};
-
 const _allStatusLabels = {
   'new':                  'New',
   'contacted':            'Contacted',
@@ -504,25 +498,44 @@ class _LeadCard extends StatelessWidget {
           // Price + phone row
           if (price != null || lead.consumerPhone != null) ...[
             const SizedBox(height: 6),
-            Row(children: [
-              if (price != null) ...[
-                Icon(Icons.attach_money, size: 11, color: p.success),
-                Text(
-                  'PKR ${price.toStringAsFixed(0).replaceAllMapped(RegExp(r"(\d)(?=(\d{3})+(?!\d))"), (m) => "${m[1]},")}',
-                  style: AppTextStyles.caption.copyWith(
-                      color: p.success, fontSize: 10, fontWeight: FontWeight.w600),
-                ),
+            // Each side shrinks with an ellipsis so long prices/phone numbers
+            // fit narrow Kanban columns instead of overflowing.
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                if (price != null)
+                  Flexible(
+                    child: Row(mainAxisSize: MainAxisSize.min, children: [
+                      Icon(Icons.attach_money, size: 11, color: p.success),
+                      Flexible(
+                        child: Text(
+                          'PKR ${price.toStringAsFixed(0).replaceAllMapped(RegExp(r"(\d)(?=(\d{3})+(?!\d))"), (m) => "${m[1]},")}',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: AppTextStyles.caption.copyWith(
+                              color: p.success, fontSize: 10, fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                    ]),
+                  ),
+                if (price != null && lead.consumerPhone != null)
+                  const SizedBox(width: 6),
+                if (lead.consumerPhone != null)
+                  Flexible(
+                    child: Row(mainAxisSize: MainAxisSize.min, children: [
+                      Icon(Icons.phone_outlined, size: 11, color: p.textMuted),
+                      const SizedBox(width: 3),
+                      Flexible(
+                        child: Text(lead.consumerPhone!,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: AppTextStyles.caption.copyWith(
+                                color: p.textMuted, fontSize: 10)),
+                      ),
+                    ]),
+                  ),
               ],
-              const Spacer(),
-              if (lead.consumerPhone != null)
-                Row(children: [
-                  Icon(Icons.phone_outlined, size: 11, color: p.textMuted),
-                  const SizedBox(width: 3),
-                  Text(lead.consumerPhone!,
-                      style: AppTextStyles.caption.copyWith(
-                          color: p.textMuted, fontSize: 10)),
-                ]),
-            ]),
+            ),
           ],
         ],
       ),

@@ -24,10 +24,71 @@ class InventoryCsvService {
     'transmission', 'fuel_type', 'condition', 'purchase_price', 'retail_price',
   ];
 
-  static const _validStatuses = {'available', 'reserved', 'sold'};
-  static const _validTransmissions = {'manual', 'automatic'};
-  static const _validFuelTypes = {'petrol', 'diesel', 'hybrid', 'electric', 'cng'};
-  static const _validConditions = {'excellent', 'good', 'fair'};
+  // Matches the import dialog's "Required columns" text; every other
+  // column is optional and may be left out of the file entirely.
+  static const _requiredHeaders = ['make', 'model', 'year', 'price', 'status'];
+
+  // Accepted spellings (already trimmed + lowercased) → the exact value the
+  // LIVE `cars` check constraints allow. Note the live condition constraint
+  // is 'excellent'/'good'/'fair' — 20260630062555_initial_schema.sql says
+  // 'new'/'used'/'certified', but live rows and VehicleFormV2 both use the
+  // former, and inserting the latter fails with a 400.
+  static const _statusAliases = {
+    'available': 'available',
+    'active': 'available',
+    'reserved': 'reserved',
+    'sold': 'sold',
+  };
+  static const _transmissionAliases = {
+    'manual': 'manual',
+    'm/t': 'manual',
+    'mt': 'manual',
+    'automatic': 'automatic',
+    'auto': 'automatic',
+    'a/t': 'automatic',
+    'at': 'automatic',
+  };
+  static const _fuelTypeAliases = {
+    'petrol': 'petrol',
+    'gasoline': 'petrol',
+    'diesel': 'diesel',
+    'hybrid': 'hybrid',
+    'electric': 'electric',
+    'ev': 'electric',
+    'cng': 'cng',
+  };
+  static const _conditionAliases = {
+    'excellent': 'excellent',
+    'good': 'good',
+    'fair': 'fair',
+    'new': 'excellent',
+    'certified': 'excellent',
+    'cpo': 'excellent',
+    'used': 'good',
+  };
+
+  /// `" Fuel Type"`, `"FUEL-TYPE"`, `"﻿make"` (Excel's UTF-8 BOM) →
+  /// `fuel_type` / `make`.
+  static String normalizeHeader(Object? raw) => raw
+      .toString()
+      .replaceAll('﻿', '')
+      .trim()
+      .toLowerCase()
+      .replaceAll(RegExp(r'[\s\-]+'), '_');
+
+  /// Maps a cell to its DB enum value via [aliases]; null for an empty cell.
+  /// Throws a row error naming the accepted spellings otherwise.
+  static String? _enumCell(String field, String? raw, Map<String, String> aliases) {
+    if (raw == null) return null;
+    final mapped = aliases[raw.trim().toLowerCase()];
+    if (mapped == null) {
+      throw '$field "$raw" is not recognised — use one of: ${aliases.keys.join(', ')}';
+    }
+    return mapped;
+  }
+
+  /// Accepts thousands separators ("4,850,000").
+  static String? _numeric(String? raw) => raw?.replaceAll(RegExp(r'[,\s]'), '');
 
   String export(List<CarModel> cars) {
     final rows = <List<dynamic>>[_headers];
@@ -48,10 +109,10 @@ class InventoryCsvService {
     final rows = const CsvToListConverter(eol: '\n').convert(csvText, shouldParseNumbers: false);
     if (rows.isEmpty) return const CsvImportResult(validCars: [], errors: []);
 
-    final header = rows.first.map((e) => e.toString().trim().toLowerCase()).toList();
+    final header = rows.first.map(normalizeHeader).toList();
     final colIndex = {for (var i = 0; i < header.length; i++) header[i]: i};
 
-    final missing = _headers.where((h) => h != 'purchase_price' && h != 'retail_price' && !colIndex.containsKey(h));
+    final missing = _requiredHeaders.where((h) => !colIndex.containsKey(h));
     if (missing.isNotEmpty) {
       return CsvImportResult(validCars: const [], errors: [CsvRowError(0, 'Missing required column(s): ${missing.join(', ')}')]);
     }
@@ -76,32 +137,26 @@ class InventoryCsvService {
         final model = cell('model');
         final yearStr = cell('year');
         final priceStr = cell('price');
-        final status = cell('status') ?? 'available';
+        final status =
+            _enumCell('status', cell('status'), _statusAliases) ?? 'available';
 
         if (make == null) throw 'make is required';
         if (model == null) throw 'model is required';
         final year = int.tryParse(yearStr ?? '');
         if (year == null || year < 1980 || year > 2030) throw 'year must be between 1980-2030';
-        final price = double.tryParse(priceStr ?? '');
+        final price = double.tryParse(_numeric(priceStr) ?? '');
         if (price == null || price <= 0) throw 'price must be a positive number';
-        if (!_validStatuses.contains(status)) throw 'status must be one of $_validStatuses';
 
-        final transmission = cell('transmission');
-        if (transmission != null && !_validTransmissions.contains(transmission)) {
-          throw 'transmission must be one of $_validTransmissions';
-        }
-        final fuelType = cell('fuel_type');
-        if (fuelType != null && !_validFuelTypes.contains(fuelType)) {
-          throw 'fuel_type must be one of $_validFuelTypes';
-        }
-        final condition = cell('condition');
-        if (condition != null && !_validConditions.contains(condition)) {
-          throw 'condition must be one of $_validConditions';
-        }
-        final mileageStr = cell('mileage');
+        final transmission =
+            _enumCell('transmission', cell('transmission'), _transmissionAliases);
+        final fuelType = _enumCell('fuel_type', cell('fuel_type'), _fuelTypeAliases);
+        final condition = _enumCell('condition', cell('condition'), _conditionAliases);
+        final mileageStr = _numeric(cell('mileage'));
         final mileage = mileageStr != null ? int.tryParse(mileageStr) : null;
         if (mileageStr != null && mileage == null) throw 'mileage must be a whole number';
         if (mileage != null && mileage < 0) throw 'mileage cannot be negative';
+
+        final bodyType = cell('body_type')?.toLowerCase();
 
         final now = DateTime.now();
         cars.add(CarModel(
@@ -112,6 +167,7 @@ class InventoryCsvService {
           year: year,
           price: price,
           status: status,
+          specs: {if (bodyType != null) 'body_type': bodyType},
           createdAt: now,
           updatedAt: now,
           mileage: mileage,
@@ -119,8 +175,8 @@ class InventoryCsvService {
           transmission: transmission,
           fuelType: fuelType,
           condition: condition,
-          purchasePrice: double.tryParse(cell('purchase_price') ?? ''),
-          retailPrice: double.tryParse(cell('retail_price') ?? ''),
+          purchasePrice: double.tryParse(_numeric(cell('purchase_price')) ?? ''),
+          retailPrice: double.tryParse(_numeric(cell('retail_price')) ?? ''),
         ));
       } catch (e) {
         errors.add(CsvRowError(rowNum, e.toString()));

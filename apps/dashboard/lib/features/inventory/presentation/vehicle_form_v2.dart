@@ -184,11 +184,24 @@ class _VehicleFormV2State extends ConsumerState<VehicleFormV2> {
 
     if (result == null) return;
 
-    if (_pendingPhotos.isNotEmpty) {
-      await notifier.uploadPhotos(result.id, _pendingPhotos);
-    }
+    // The vehicle row exists at this point, so the dialog closes either way
+    // (staying open would make a retry create a duplicate car); an upload
+    // failure is reported on the page underneath instead.
+    if (!mounted) return;
+    final messenger = ScaffoldMessenger.of(context);
+    final errorColor = context.palette.error;
+    final uploadError = _pendingPhotos.isEmpty
+        ? null
+        : await notifier.uploadPhotos(result.id, _pendingPhotos);
 
     if (mounted) Navigator.of(context).pop(true);
+    if (uploadError != null) {
+      messenger.showSnackBar(SnackBar(
+        content: Text('Vehicle saved, but photos failed: $uploadError'),
+        backgroundColor: errorColor,
+        duration: const Duration(seconds: 10),
+      ));
+    }
   }
 
   @override
@@ -203,9 +216,9 @@ class _VehicleFormV2State extends ConsumerState<VehicleFormV2> {
         width: 720,
         constraints: const BoxConstraints(maxHeight: 780),
         decoration: BoxDecoration(
-          color: AppColors.navySurface.withValues(alpha: 0.97),
+          color: context.palette.card,
           borderRadius: BorderRadius.circular(AppDimensions.radiusL),
-          border: Border.all(color: AppColors.navyBorder),
+          border: Border.all(color: context.palette.border),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -216,16 +229,16 @@ class _VehicleFormV2State extends ConsumerState<VehicleFormV2> {
                 children: [
                   Expanded(
                     child: Text(_isEditMode ? 'Edit Vehicle' : 'Add New Vehicle',
-                        style: AppTextStyles.heading2.copyWith(color: Colors.white, fontSize: 19)),
+                        style: AppTextStyles.heading2.copyWith(color: context.palette.textPrimary, fontSize: 19)),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.close_rounded, color: Colors.white38, size: 20),
+                    icon: Icon(Icons.close_rounded, color: context.palette.textTertiary, size: 20),
                     onPressed: busy ? null : () => Navigator.of(context).pop(false),
                   ),
                 ],
               ),
             ),
-            Divider(color: AppColors.navyBorder.withValues(alpha: 0.6), height: 1),
+            Divider(color: context.palette.border, height: 1),
             Flexible(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.all(AppDimensions.paddingL),
@@ -251,7 +264,7 @@ class _VehicleFormV2State extends ConsumerState<VehicleFormV2> {
                               height: 44,
                               child: ElevatedButton(
                                 onPressed: formState.isDecodingVin ? null : _decodeVin,
-                                style: ElevatedButton.styleFrom(backgroundColor: AppColors.ambientBlue, foregroundColor: AppColors.navyBackground),
+                                style: ElevatedButton.styleFrom(backgroundColor: context.palette.accent, foregroundColor: context.palette.onAccent),
                                 child: formState.isDecodingVin
                                     ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2))
                                     : const Text('Decode'),
@@ -370,26 +383,26 @@ class _VehicleFormV2State extends ConsumerState<VehicleFormV2> {
                         contentPadding: EdgeInsets.zero,
                         value: _isPublic,
                         onChanged: (v) => setState(() => _isPublic = v),
-                        activeThumbColor: AppColors.ambientBlue,
-                        title: Text('Visible in customer app', style: AppTextStyles.body.copyWith(color: Colors.white70, fontSize: 13)),
+                        activeThumbColor: context.palette.accent,
+                        title: Text('Visible in customer app', style: AppTextStyles.body.copyWith(color: context.palette.textPrimary, fontSize: 13)),
                       ),
                       const SizedBox(height: AppDimensions.paddingM),
                       OutlinedButton.icon(
                         onPressed: _pickPhotos,
                         icon: const Icon(Icons.add_photo_alternate_outlined, size: 18),
                         label: Text('Add Photos (${_pendingPhotos.length} selected)'),
-                        style: OutlinedButton.styleFrom(side: BorderSide(color: AppColors.navyBorder)),
+                        style: OutlinedButton.styleFrom(side: BorderSide(color: context.palette.border)),
                       ),
                       if (formState.errorMessage != null) ...[
                         const SizedBox(height: AppDimensions.paddingM),
                         Container(
                           padding: const EdgeInsets.all(AppDimensions.paddingM),
                           decoration: BoxDecoration(
-                            color: AppColors.error.withValues(alpha: 0.08),
+                            color: context.palette.error.withValues(alpha: 0.08),
                             borderRadius: BorderRadius.circular(AppDimensions.radiusS),
-                            border: Border.all(color: AppColors.error.withValues(alpha: 0.3)),
+                            border: Border.all(color: context.palette.error.withValues(alpha: 0.3)),
                           ),
-                          child: Text(formState.errorMessage!, style: AppTextStyles.caption.copyWith(color: AppColors.error)),
+                          child: Text(formState.errorMessage!, style: AppTextStyles.caption.copyWith(color: context.palette.error)),
                         ),
                       ],
                     ],
@@ -397,7 +410,7 @@ class _VehicleFormV2State extends ConsumerState<VehicleFormV2> {
                 ),
               ),
             ),
-            Divider(color: AppColors.navyBorder.withValues(alpha: 0.6), height: 1),
+            Divider(color: context.palette.border, height: 1),
             Padding(
               padding: const EdgeInsets.all(AppDimensions.paddingM),
               child: Row(
@@ -409,7 +422,7 @@ class _VehicleFormV2State extends ConsumerState<VehicleFormV2> {
                     height: 42,
                     child: ElevatedButton(
                       onPressed: busy ? null : _handleSubmit,
-                      style: ElevatedButton.styleFrom(backgroundColor: AppColors.ambientBlue, foregroundColor: AppColors.navyBackground),
+                      style: ElevatedButton.styleFrom(backgroundColor: context.palette.accent, foregroundColor: context.palette.onAccent),
                       child: busy
                           ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
                           : Text(_isEditMode ? 'Save Changes' : 'Add Vehicle'),
@@ -438,7 +451,7 @@ class _VehicleFormV2State extends ConsumerState<VehicleFormV2> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: AppTextStyles.caption.copyWith(color: Colors.white38, fontSize: 11)),
+        Text(label, style: AppTextStyles.caption.copyWith(color: context.palette.textSecondary, fontSize: 11)),
         const SizedBox(height: 6),
         TextFormField(
           controller: controller,
@@ -447,12 +460,12 @@ class _VehicleFormV2State extends ConsumerState<VehicleFormV2> {
           maxLength: maxLength,
           inputFormatters: inputFormatters,
           validator: validator,
-          style: AppTextStyles.body.copyWith(color: Colors.white, fontSize: 13),
+          style: AppTextStyles.body.copyWith(color: context.palette.textPrimary, fontSize: 13),
           decoration: InputDecoration(
             filled: true,
-            fillColor: Colors.white.withValues(alpha: 0.04),
+            fillColor: context.palette.surface,
             counterText: '',
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppDimensions.radiusS), borderSide: BorderSide(color: AppColors.navyBorder)),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppDimensions.radiusS), borderSide: BorderSide(color: context.palette.border)),
           ),
         ),
       ],
@@ -463,7 +476,7 @@ class _VehicleFormV2State extends ConsumerState<VehicleFormV2> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: AppTextStyles.caption.copyWith(color: Colors.white38, fontSize: 11)),
+        Text(label, style: AppTextStyles.caption.copyWith(color: context.palette.textSecondary, fontSize: 11)),
         const SizedBox(height: 6),
         DropdownButtonFormField<String>(
           // `initialValue` is guaranteed to be either null or a member of
@@ -471,13 +484,13 @@ class _VehicleFormV2State extends ConsumerState<VehicleFormV2> {
           // which is what avoids the dropdown assertion error from before.
           initialValue: value != null && items.contains(value) ? value : null,
           isExpanded: true,
-          dropdownColor: AppColors.navySurface,
-          style: AppTextStyles.body.copyWith(color: Colors.white, fontSize: 13),
+          dropdownColor: context.palette.card,
+          style: AppTextStyles.body.copyWith(color: context.palette.textPrimary, fontSize: 13),
           validator: (v) => v == null ? 'Required' : null,
           decoration: InputDecoration(
             filled: true,
-            fillColor: Colors.white.withValues(alpha: 0.04),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppDimensions.radiusS), borderSide: BorderSide(color: AppColors.navyBorder)),
+            fillColor: context.palette.surface,
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppDimensions.radiusS), borderSide: BorderSide(color: context.palette.border)),
           ),
           items: items.map((item) => DropdownMenuItem(value: item, child: Text(_titleCase(item)))).toList(),
           onChanged: onChanged,

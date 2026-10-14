@@ -20,6 +20,7 @@ class _CsvImportDialogState extends ConsumerState<CsvImportDialog> {
   CsvImportResult? _result;
   bool _isImporting = false;
   String? _fileError;
+  List<String> _importFailures = const [];
 
   Future<void> _pickFile() async {
     final picked = await FilePicker.platform.pickFiles(type: FileType.custom, allowedExtensions: ['csv']);
@@ -30,6 +31,7 @@ class _CsvImportDialogState extends ConsumerState<CsvImportDialog> {
       setState(() {
         _result = _csvService.import(text);
         _fileError = null;
+        _importFailures = const [];
       });
     } catch (e) {
       setState(() => _fileError = 'Could not read file: $e');
@@ -41,31 +43,47 @@ class _CsvImportDialogState extends ConsumerState<CsvImportDialog> {
     final service = ref.read(inventoryServiceProvider);
     if (result == null || service == null || result.validCars.isEmpty) return;
 
-    setState(() => _isImporting = true);
-    var failures = 0;
+    setState(() {
+      _isImporting = true;
+      _importFailures = const [];
+    });
+    final failures = <String>[];
     for (final car in result.validCars) {
       try {
         await service.createCar(car);
-      } catch (_) {
-        failures++;
+      } catch (e) {
+        final line = '${car.year} ${car.make} ${car.model}: $e';
+        debugPrint('CSV import failed — $line');
+        failures.add(line);
       }
     }
-    setState(() => _isImporting = false);
     ref.read(inventoryListProvider.notifier).refresh();
+    if (!mounted) return;
 
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('Imported ${result.validCars.length - failures} of ${result.validCars.length} vehicles.'),
-      ));
+    final imported = result.validCars.length - failures.length;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text('Imported $imported of ${result.validCars.length} vehicles.'),
+    ));
+    if (failures.isEmpty) {
       Navigator.of(context).pop();
+      return;
     }
+    // Keep the dialog open so the reasons are readable. The rows that did
+    // import are cleared so a second click can't insert them twice.
+    setState(() {
+      _isImporting = false;
+      _importFailures = failures;
+      _result = null;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     final result = _result;
+    final p = context.palette;
     return Dialog(
-      backgroundColor: AppColors.navySurface,
+      backgroundColor: p.card,
+      surfaceTintColor: Colors.transparent,
       child: Container(
         width: 560,
         constraints: const BoxConstraints(maxHeight: 600),
@@ -74,22 +92,35 @@ class _CsvImportDialogState extends ConsumerState<CsvImportDialog> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Bulk Import Inventory (CSV)', style: AppTextStyles.heading2.copyWith(color: Colors.white, fontSize: 17)),
+            Text('Bulk Import Inventory (CSV)', style: AppTextStyles.heading2.copyWith(color: p.textPrimary, fontSize: 17)),
             const SizedBox(height: 6),
-            Text('Required columns: make, model, year, price, status.', style: AppTextStyles.caption.copyWith(color: Colors.white38)),
+            Text('Required columns: make, model, year, price, status.', style: AppTextStyles.caption.copyWith(color: p.textSecondary)),
             const SizedBox(height: AppDimensions.paddingM),
             OutlinedButton.icon(onPressed: _pickFile, icon: const Icon(Icons.upload_file_rounded), label: const Text('Choose CSV file')),
-            if (_fileError != null) Padding(padding: const EdgeInsets.only(top: 8), child: Text(_fileError!, style: TextStyle(color: AppColors.error))),
+            if (_fileError != null) Padding(padding: const EdgeInsets.only(top: 8), child: Text(_fileError!, style: TextStyle(color: p.error))),
             if (result != null) ...[
               const SizedBox(height: AppDimensions.paddingM),
-              Text('${result.validCars.length} valid rows, ${result.errors.length} errors', style: AppTextStyles.body.copyWith(color: Colors.white70)),
+              Text('${result.validCars.length} valid rows, ${result.errors.length} errors', style: AppTextStyles.body.copyWith(color: p.textPrimary)),
               if (result.errors.isNotEmpty)
                 Flexible(
                   child: ListView(
                     shrinkWrap: true,
-                    children: result.errors.map((e) => Text(e.toString(), style: TextStyle(color: AppColors.error, fontSize: 11))).toList(),
+                    children: result.errors.map((e) => Text(e.toString(), style: TextStyle(color: p.error, fontSize: 11))).toList(),
                   ),
                 ),
+            ],
+            if (_importFailures.isNotEmpty) ...[
+              const SizedBox(height: AppDimensions.paddingM),
+              Text('${_importFailures.length} vehicle(s) were rejected by the database:',
+                  style: AppTextStyles.body.copyWith(color: p.textPrimary)),
+              Flexible(
+                child: ListView(
+                  shrinkWrap: true,
+                  children: _importFailures
+                      .map((f) => SelectableText(f, style: TextStyle(color: p.error, fontSize: 11)))
+                      .toList(),
+                ),
+              ),
             ],
             const SizedBox(height: AppDimensions.paddingL),
             Row(

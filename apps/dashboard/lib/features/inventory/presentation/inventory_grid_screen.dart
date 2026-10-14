@@ -1,6 +1,9 @@
 // lib/features/inventory/presentation/inventory_grid_screen.dart
 // Full Module B grid: checkboxes, days-on-lot, profit margin, QR/sticker
 // button, crash-safe delete, empty-state guard, infinite scroll.
+//
+// Every color comes from `context.palette` so the screen follows the
+// light/dark toggle — no hard-coded navy/white values.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -55,7 +58,7 @@ class _InventoryGridScreenState extends ConsumerState<InventoryGridScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _Header(),
+          const _Header(),
           const SizedBox(height: AppDimensions.paddingL),
           const _FilterBar(),
           if (selection.isNotEmpty) ...[
@@ -73,8 +76,7 @@ class _InventoryGridScreenState extends ConsumerState<InventoryGridScreen> {
                   isLoadingMore: pageState.isLoadingMore,
                 );
               },
-              loading: () => const Center(
-                  child: CircularProgressIndicator(color: AppColors.ambientBlue)),
+              loading: () => const Center(child: CircularProgressIndicator()),
               error: (err, _) => _ErrorState(
                 message: err.toString(),
                 onRetry: () => ref.read(inventoryListProvider.notifier).refresh(),
@@ -91,23 +93,25 @@ class _InventoryGridScreenState extends ConsumerState<InventoryGridScreen> {
 // Header
 // ---------------------------------------------------------------------------
 
-class _Header extends ConsumerWidget {
+class _Header extends StatelessWidget {
+  const _Header();
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
+    final p = context.palette;
     return Row(
       children: [
         Expanded(
           child: Text('Inventory',
-              style: AppTextStyles.heading1.copyWith(color: Colors.white, fontSize: 26)),
+              style: AppTextStyles.heading1.copyWith(color: p.textPrimary, fontSize: 26)),
         ),
         OutlinedButton.icon(
           onPressed: () =>
               showDialog(context: context, builder: (_) => const CsvImportDialog()),
-          icon: const Icon(Icons.upload_file_rounded, size: 16, color: Colors.white54),
+          icon: Icon(Icons.upload_file_rounded, size: 16, color: p.textSecondary),
           label: Text('Import CSV',
-              style: AppTextStyles.body.copyWith(color: Colors.white54, fontSize: 12.5)),
-          style:
-              OutlinedButton.styleFrom(side: BorderSide(color: AppColors.navyBorder)),
+              style: AppTextStyles.body.copyWith(color: p.textSecondary, fontSize: 12.5)),
+          style: OutlinedButton.styleFrom(side: BorderSide(color: p.border)),
         ),
         const SizedBox(width: AppDimensions.paddingS),
         ElevatedButton.icon(
@@ -116,8 +120,8 @@ class _Header extends ConsumerWidget {
           icon: const Icon(Icons.add_rounded, size: 18),
           label: const Text('Add Vehicle'),
           style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.ambientBlue,
-            foregroundColor: AppColors.navyBackground,
+            backgroundColor: p.accent,
+            foregroundColor: p.onAccent,
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
             shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(AppDimensions.radiusS)),
@@ -139,6 +143,11 @@ class _FilterBar extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final activeFilter = ref.watch(inventoryStatusFilterProvider);
     final sort = ref.watch(inventorySortProvider);
+    final p = context.palette;
+
+    OutlineInputBorder border(Color color, [double width = 1]) => OutlineInputBorder(
+        borderRadius: BorderRadius.circular(AppDimensions.radiusS),
+        borderSide: BorderSide(color: color, width: width));
 
     return Row(
       children: [
@@ -146,24 +155,16 @@ class _FilterBar extends ConsumerWidget {
           flex: 2,
           child: TextField(
             onChanged: (v) => ref.read(inventorySearchProvider.notifier).state = v,
-            style: AppTextStyles.body.copyWith(color: Colors.white, fontSize: 13),
+            style: AppTextStyles.body.copyWith(color: p.textPrimary, fontSize: 13),
             decoration: InputDecoration(
               hintText: 'Search by make or model…',
-              hintStyle:
-                  AppTextStyles.body.copyWith(color: Colors.white24, fontSize: 13),
-              prefixIcon:
-                  const Icon(Icons.search_rounded, color: Colors.white30, size: 18),
+              hintStyle: AppTextStyles.body.copyWith(color: p.textMuted, fontSize: 13),
+              prefixIcon: Icon(Icons.search_rounded, color: p.textTertiary, size: 18),
               filled: true,
-              fillColor: AppColors.navySurface.withValues(alpha: 0.5),
-              border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(AppDimensions.radiusS),
-                  borderSide: BorderSide(color: AppColors.navyBorder)),
-              enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(AppDimensions.radiusS),
-                  borderSide: BorderSide(color: AppColors.navyBorder)),
-              focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(AppDimensions.radiusS),
-                  borderSide: const BorderSide(color: AppColors.ambientBlue)),
+              fillColor: p.card,
+              border: border(p.border),
+              enabledBorder: border(p.border),
+              focusedBorder: border(p.accent, 1.5),
             ),
           ),
         ),
@@ -178,14 +179,13 @@ class _FilterBar extends ConsumerWidget {
               selected: isActive,
               onSelected: (_) =>
                   ref.read(inventoryStatusFilterProvider.notifier).state = status,
-              selectedColor: AppColors.ambientBlue.withValues(alpha: 0.2),
-              backgroundColor: AppColors.navySurface.withValues(alpha: 0.5),
-              side: BorderSide(
-                  color: isActive
-                      ? AppColors.ambientBlue.withValues(alpha: 0.5)
-                      : AppColors.navyBorder),
+              showCheckmark: false,
+              selectedColor: p.accent,
+              backgroundColor: p.card,
+              side: BorderSide(color: isActive ? p.accent : p.border),
               labelStyle: AppTextStyles.caption.copyWith(
-                  color: isActive ? AppColors.ambientBlue : Colors.white54,
+                  color: isActive ? p.onAccent : p.textSecondary,
+                  fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
                   fontSize: 12),
             ),
           );
@@ -193,9 +193,10 @@ class _FilterBar extends ConsumerWidget {
         const Spacer(),
         DropdownButton<InventorySort>(
           value: sort,
-          dropdownColor: AppColors.navySurface,
+          dropdownColor: p.card,
           underline: const SizedBox.shrink(),
-          style: AppTextStyles.caption.copyWith(color: Colors.white70),
+          iconEnabledColor: p.textSecondary,
+          style: AppTextStyles.caption.copyWith(color: p.textSecondary),
           items: const [
             DropdownMenuItem(
                 value: InventorySort(InventorySortField.createdAt, false),
@@ -230,18 +231,19 @@ class _BulkActionBar extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final bulkState = ref.watch(bulkActionProvider);
+    final p = context.palette;
     return Container(
       padding: const EdgeInsets.symmetric(
           horizontal: AppDimensions.paddingM, vertical: 10),
       decoration: BoxDecoration(
-        color: AppColors.ambientBlue.withValues(alpha: 0.08),
+        color: p.accent.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(AppDimensions.radiusS),
-        border: Border.all(color: AppColors.ambientBlue.withValues(alpha: 0.3)),
+        border: Border.all(color: p.accent.withValues(alpha: 0.3)),
       ),
       child: Row(
         children: [
           Text('$selectedCount selected',
-              style: AppTextStyles.body.copyWith(color: Colors.white70, fontSize: 12.5)),
+              style: AppTextStyles.body.copyWith(color: p.textPrimary, fontSize: 12.5)),
           const Spacer(),
           TextButton(
             onPressed: bulkState.isProcessing
@@ -270,10 +272,10 @@ class _BulkActionBar extends ConsumerWidget {
                       await ref.read(bulkActionProvider.notifier).deleteSelected();
                     }
                   },
-            child: Text('Delete', style: TextStyle(color: AppColors.error)),
+            child: Text('Delete', style: TextStyle(color: p.error)),
           ),
           IconButton(
-            icon: const Icon(Icons.close_rounded, size: 18, color: Colors.white38),
+            icon: Icon(Icons.close_rounded, size: 18, color: p.textTertiary),
             onPressed: () => ref.read(bulkSelectionProvider.notifier).clear(),
           ),
         ],
@@ -310,9 +312,7 @@ class _InventoryGridBody extends ConsumerWidget {
       itemCount: cars.length + (isLoadingMore ? 1 : 0),
       itemBuilder: (context, i) {
         if (i >= cars.length) {
-          return const Center(
-              child: CircularProgressIndicator(
-                  color: AppColors.ambientBlue, strokeWidth: 2));
+          return const Center(child: CircularProgressIndicator(strokeWidth: 2));
         }
         return _VehicleCard(car: cars[i]);
       },
@@ -328,16 +328,16 @@ class _VehicleCard extends ConsumerWidget {
   const _VehicleCard({required this.car});
   final CarModel car;
 
-  Color _statusColor(String status) {
+  Color _statusColor(AppPalette p, String status) {
     switch (status) {
       case 'available':
-        return AppColors.statusAvailable;
+        return p.statusAvailable;
       case 'reserved':
-        return AppColors.statusReserved;
+        return p.statusReserved;
       case 'sold':
-        return AppColors.statusSold;
+        return p.statusSold;
       default:
-        return AppColors.textTertiary;
+        return p.textTertiary;
     }
   }
 
@@ -347,27 +347,32 @@ class _VehicleCard extends ConsumerWidget {
     final margin = car.profitMargin;
     final dealershipAsync = ref.watch(currentDealershipProvider);
     final dealerName = dealershipAsync.value?.name ?? 'AutoServe';
+    final p = context.palette;
+    final statusColor = _statusColor(p, car.status);
 
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.navySurface.withValues(alpha: 0.5),
+        color: p.card,
         borderRadius: BorderRadius.circular(AppDimensions.radiusL),
         border: Border.all(
-          color: isSelected
-              ? AppColors.ambientBlue.withValues(alpha: 0.6)
-              : AppColors.navyBorder.withValues(alpha: 0.6),
+          color: isSelected ? p.accent : p.border,
+          width: isSelected ? 1.5 : 1,
         ),
         boxShadow: [
           BoxShadow(
-              color: Colors.black.withValues(alpha: 0.3),
-              blurRadius: 16,
-              offset: const Offset(0, 5)),
+            color: p.shadowColor.withValues(
+                alpha: Theme.of(context).brightness == Brightness.dark ? 0.3 : 0.06),
+            blurRadius: 16,
+            offset: const Offset(0, 5),
+          ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           // ── Photo + overlays ─────────────────────────────────────
+          // The checkbox and days-on-lot badge sit on the photo, so they keep
+          // fixed dark-scrim colors in both themes.
           Stack(
             children: [
               AspectRatio(
@@ -375,14 +380,9 @@ class _VehicleCard extends ConsumerWidget {
                 child: ClipRRect(
                   borderRadius: const BorderRadius.vertical(
                       top: Radius.circular(AppDimensions.radiusL)),
-                  child: car.photoUrls.isNotEmpty
-                      ? Image.network(car.photoUrls.first,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => _placeholder())
-                      : _placeholder(),
+                  child: CarNetworkImage(url: car.photoUrls.firstOrNull),
                 ),
               ),
-              // Checkbox
               Positioned(
                 top: 6,
                 left: 6,
@@ -400,13 +400,12 @@ class _VehicleCard extends ConsumerWidget {
                             ? Icons.check_box_rounded
                             : Icons.check_box_outline_blank_rounded,
                         size: 18,
-                        color: isSelected ? AppColors.ambientBlue : Colors.white54,
+                        color: isSelected ? p.accent : Colors.white70,
                       ),
                     ),
                   ),
                 ),
               ),
-              // Days on lot badge
               Positioned(
                 top: 8,
                 right: 8,
@@ -435,7 +434,7 @@ class _VehicleCard extends ConsumerWidget {
                 Text(
                   car.displayTitle,
                   style: AppTextStyles.bodyBold
-                      .copyWith(color: Colors.white, fontSize: 13.5),
+                      .copyWith(color: p.textPrimary, fontSize: 13.5),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -443,16 +442,14 @@ class _VehicleCard extends ConsumerWidget {
                 Text(
                   car.formattedPrice,
                   style: AppTextStyles.body
-                      .copyWith(color: Colors.white70, fontSize: 12.5),
+                      .copyWith(color: p.textSecondary, fontSize: 12.5),
                 ),
                 if (margin != null) ...[
                   const SizedBox(height: 2),
                   Text(
                     'Margin: PKR ${margin.toStringAsFixed(0).replaceAllMapped(RegExp(r"(\d)(?=(\d{3})+(?!\d))"), (m) => "${m[1]},")}',
                     style: AppTextStyles.caption.copyWith(
-                      color: margin >= 0
-                          ? AppColors.statusAvailable
-                          : AppColors.error,
+                      color: margin >= 0 ? p.statusAvailable : p.error,
                       fontSize: 10.5,
                     ),
                   ),
@@ -460,27 +457,24 @@ class _VehicleCard extends ConsumerWidget {
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    // Status badge
                     Container(
                       padding: const EdgeInsets.symmetric(
                           horizontal: 8, vertical: 3),
                       decoration: BoxDecoration(
-                        color: _statusColor(car.status).withValues(alpha: 0.14),
+                        color: statusColor.withValues(alpha: 0.14),
                         borderRadius:
                             BorderRadius.circular(AppDimensions.radiusFull),
-                        border: Border.all(
-                            color: _statusColor(car.status).withValues(alpha: 0.4)),
+                        border: Border.all(color: statusColor.withValues(alpha: 0.4)),
                       ),
                       child: Text(
                         car.status[0].toUpperCase() + car.status.substring(1),
                         style: AppTextStyles.caption.copyWith(
-                            color: _statusColor(car.status),
+                            color: statusColor,
                             fontSize: 10,
                             fontWeight: FontWeight.w600),
                       ),
                     ),
                     const Spacer(),
-                    // Edit
                     _IconBtn(
                       icon: Icons.edit_outlined,
                       tooltip: 'Edit',
@@ -488,11 +482,10 @@ class _VehicleCard extends ConsumerWidget {
                           context: context,
                           builder: (_) => VehicleFormV2(carToEdit: car)),
                     ),
-                    // QR / Window Sticker
                     _IconBtn(
                       icon: Icons.qr_code_2_rounded,
                       tooltip: 'Window Sticker / QR',
-                      color: AppColors.ambientBlue.withValues(alpha: 0.8),
+                      color: p.accent,
                       onPressed: () async {
                         try {
                           await const WindowStickerPdfService().printSticker(
@@ -509,7 +502,6 @@ class _VehicleCard extends ConsumerWidget {
                         }
                       },
                     ),
-                    // Delete
                     _IconBtn(
                       icon: Icons.delete_outline_rounded,
                       tooltip: 'Delete',
@@ -550,18 +542,11 @@ class _VehicleCard extends ConsumerWidget {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Failed to delete: $e'),
-          backgroundColor: AppColors.error,
+          backgroundColor: context.palette.error,
         ),
       );
     }
   }
-
-  Widget _placeholder() => Container(
-        color: AppColors.navyBorder.withValues(alpha: 0.4),
-        child: const Center(
-            child: Icon(Icons.directions_car_rounded,
-                color: Colors.white24, size: 32)),
-      );
 }
 
 class _IconBtn extends StatelessWidget {
@@ -579,7 +564,7 @@ class _IconBtn extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return IconButton(
-      icon: Icon(icon, size: 17, color: color ?? Colors.white38),
+      icon: Icon(icon, size: 17, color: color ?? context.palette.textTertiary),
       tooltip: tooltip,
       onPressed: onPressed,
       padding: const EdgeInsets.all(6),
@@ -592,24 +577,24 @@ class _IconBtn extends StatelessWidget {
 // Empty state — rendered when cars list is empty after filters/delete
 // ---------------------------------------------------------------------------
 
-class _EmptyState extends ConsumerWidget {
+class _EmptyState extends StatelessWidget {
   const _EmptyState();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
+    final p = context.palette;
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.directions_car_outlined,
-              color: Colors.white24, size: 40),
+          Icon(Icons.directions_car_outlined, color: p.textTertiary, size: 40),
           const SizedBox(height: AppDimensions.paddingM),
           Text('No vehicles found',
-              style: AppTextStyles.bodyBold.copyWith(color: Colors.white54)),
+              style: AppTextStyles.bodyBold.copyWith(color: p.textPrimary)),
           const SizedBox(height: 4),
           Text(
             'Add your first vehicle or adjust the search filters.',
-            style: AppTextStyles.caption.copyWith(color: Colors.white30),
+            style: AppTextStyles.caption.copyWith(color: p.textSecondary),
           ),
           const SizedBox(height: AppDimensions.paddingL),
           ElevatedButton.icon(
@@ -618,8 +603,8 @@ class _EmptyState extends ConsumerWidget {
             icon: const Icon(Icons.add_rounded, size: 18),
             label: const Text('Add Vehicle'),
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.ambientBlue,
-              foregroundColor: AppColors.navyBackground,
+              backgroundColor: p.accent,
+              foregroundColor: p.onAccent,
             ),
           ),
         ],
@@ -639,25 +624,24 @@ class _ErrorState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final p = context.palette;
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.error_outline_rounded, color: AppColors.error, size: 28),
+          Icon(Icons.error_outline_rounded, color: p.error, size: 28),
           const SizedBox(height: AppDimensions.paddingS),
           Text('Could not load inventory',
-              style: AppTextStyles.bodyBold.copyWith(color: Colors.white70)),
+              style: AppTextStyles.bodyBold.copyWith(color: p.textPrimary)),
           const SizedBox(height: 4),
           Text(message,
-              style: AppTextStyles.caption.copyWith(color: Colors.white38),
+              style: AppTextStyles.caption.copyWith(color: p.textSecondary),
               textAlign: TextAlign.center),
           const SizedBox(height: AppDimensions.paddingM),
           TextButton.icon(
             onPressed: onRetry,
-            icon: const Icon(Icons.refresh_rounded,
-                size: 16, color: AppColors.ambientBlue),
-            label: Text('Retry',
-                style: AppTextStyles.body.copyWith(color: AppColors.ambientBlue)),
+            icon: Icon(Icons.refresh_rounded, size: 16, color: p.accent),
+            label: Text('Retry', style: AppTextStyles.body.copyWith(color: p.accent)),
           ),
         ],
       ),

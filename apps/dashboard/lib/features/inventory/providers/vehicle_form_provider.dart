@@ -97,18 +97,23 @@ class VehicleFormNotifier extends Notifier<VehicleFormState> {
     }
   }
 
-  Future<List<String>> uploadPhotos(String carId, List<XFile> files) async {
+  /// Returns null on success, or a message describing what failed. Always
+  /// refreshes the inventory list afterwards: createCar/updateCar refresh it
+  /// before photos exist, so without this a new car's card shows no photo.
+  Future<String?> uploadPhotos(String carId, List<XFile> files) async {
     final storage = ref.read(vehicleStorageServiceProvider);
-    if (storage == null || files.isEmpty) return [];
+    if (storage == null) return 'No active dealership session — photos were not uploaded.';
+    if (files.isEmpty) return null;
     state = state.copyWith(isUploadingPhotos: true, errorMessage: null);
+    String? error;
     try {
-      final urls = await storage.uploadAll(carId: carId, files: files);
-      state = state.copyWith(isUploadingPhotos: false);
-      return urls;
+      await storage.uploadAll(carId: carId, files: files);
     } catch (e) {
-      state = state.copyWith(isUploadingPhotos: false, errorMessage: e.toString());
-      return [];
+      error = e.toString();
     }
+    state = state.copyWith(isUploadingPhotos: false, errorMessage: error);
+    ref.read(inventoryListProvider.notifier).refresh();
+    return error;
   }
 }
 
