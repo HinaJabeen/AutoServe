@@ -12,10 +12,12 @@ import 'package:shared/shared.dart';
 import '../../../core/router/app_router.dart';
 import '../../filters/presentation/filter_sheet.dart';
 import '../../filters/providers/filter_providers.dart';
+import '../../leads/presentation/lead_inquiry_bottom_sheet.dart';
+import '../../leads/services/lead_service.dart';
+import '../../saved/providers/saved_cars_providers.dart';
 import '../../search/presentation/widgets/search_bar_field.dart';
 import '../providers/discovery_providers.dart';
 import 'widgets/car_swipe_card.dart';
-import 'widgets/book_test_drive_sheet.dart';
 
 class SwipeDeckScreen extends ConsumerWidget {
   const SwipeDeckScreen({super.key});
@@ -30,11 +32,6 @@ class SwipeDeckScreen extends ConsumerWidget {
     // hard-coded per screen.
     return Scaffold(
       appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.account_circle_outlined),
-          tooltip: 'Profile',
-          onPressed: () => context.push(AppRoutes.profile),
-        ),
         title: const Text('AutoServe'),
         actions: [
           Stack(
@@ -139,17 +136,16 @@ class _Deck extends ConsumerWidget {
                   const AllowedSwipeDirection.only(left: true, right: true, up: true),
               onSwipe: (previousIndex, currentIndex, direction) {
                 final car = cars[previousIndex];
-                final store = ref.read(localSwipeStoreProvider);
 
+                // Both persist fire-and-forget; the swipe never waits on storage.
                 if (direction.isCloseTo(CardSwiperDirection.right)) {
-                  store.markInterested(car.id); // fire-and-forget persist
                   ref.read(savedCarsProvider.notifier).add(car);
                 } else if (direction.isCloseTo(CardSwiperDirection.left)) {
-                  store.markPassed(car.id);
+                  ref.read(localSwipeStoreProvider).markPassed(car.id);
                 } else if (direction.isCloseTo(CardSwiperDirection.top)) {
                   // "Up" — swipe completes and the modal opens concurrently;
                   // the modal records its own local decision on submit.
-                  showBookTestDriveSheet(context, car);
+                  showLeadInquiryBottomSheet(context, car: car, type: LeadType.testDrive);
                 }
                 return true;
               },
@@ -161,7 +157,7 @@ class _Deck extends ConsumerWidget {
                   horizontalPercent: horizontalPercent,
                   verticalPercent: verticalPercent,
                   onTap: () => context.push(
-                    '/vehicle/${car.id}',
+                    AppRoutes.vehicleDetailPath(car.id),
                     extra: car,
                   ),
                 );

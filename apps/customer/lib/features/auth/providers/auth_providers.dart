@@ -7,7 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared/shared.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' show AuthChangeEvent, AuthState, User;
 
-import '../../discovery/providers/discovery_providers.dart';
+import '../../saved/providers/saved_cars_providers.dart';
 import '../models/customer_profile.dart';
 import '../services/auth_service.dart';
 

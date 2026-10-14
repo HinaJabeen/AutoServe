@@ -57,17 +57,7 @@ class CarSwipeCard extends StatelessWidget {
           children: [
             // Edge-to-edge vehicle image — falls back to a neutral placeholder
             // if the car has no photos yet.
-            if (photoUrl != null)
-              Image.network(
-                photoUrl,
-                fit: BoxFit.cover,
-                errorBuilder: (_, _, _) => const _PhotoPlaceholder(),
-                loadingBuilder: (context, child, progress) => progress == null
-                    ? child
-                    : const _PhotoPlaceholder(loading: true),
-              )
-            else
-              const _PhotoPlaceholder(),
+            CarNetworkImage(url: photoUrl, iconSize: 64),
 
             // Bottom gradient so the spec overlay stays legible over any photo.
             const Positioned(
@@ -171,22 +161,6 @@ class _Stamp extends StatelessWidget {
               style: AppTextStyles.bodyBold.copyWith(color: color, letterSpacing: 1.1),
             ),
           ),
-        ),
-      );
-}
-
-class _PhotoPlaceholder extends StatelessWidget {
-  const _PhotoPlaceholder({this.loading = false});
-  final bool loading;
-
-  @override
-  Widget build(BuildContext context) => Container(
-        color: AppColors.shimmerBase,
-        child: Center(
-          child: loading
-              ? const CircularProgressIndicator(strokeWidth: 2)
-              : Icon(Icons.directions_car_rounded,
-                  size: 64, color: AppColors.textTertiary),
         ),
       );
 }

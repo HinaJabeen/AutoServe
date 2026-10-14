@@ -18,21 +18,28 @@ import '../../features/auth/providers/auth_providers.dart';
 import '../../features/details/presentation/vehicle_detail_screen.dart';
 import '../../features/discovery/presentation/swipe_deck_screen.dart';
 import '../../features/profile/presentation/profile_screen.dart';
+import '../../features/saved/presentation/saved_cars_screen.dart';
 import '../../features/search/presentation/search_screen.dart';
+import 'app_shell.dart';
 
 class AppRoutes {
   static const deck = '/';
   static const splash = '/splash';
   static const login = '/login';
   static const signup = '/signup';
+  static const saved = '/saved';
   static const profile = '/profile';
   static const search = '/search';
-  static const vehicleDetail = '/vehicle/:id';
+  static const vehicleDetail = '/vehicles/:id';
 
-  static String vehicleDetailPath(String id) => '/vehicle/$id';
+  /// Pre-rename path. Dashboard-printed QR codes encode
+  /// `autoserve://vehicle/<id>`, so this must keep resolving.
+  static const legacyVehicleDetail = '/vehicle/:id';
+
+  static String vehicleDetailPath(String id) => '/vehicles/$id';
 
   /// [path] carrying a `?from=` breadcrumb — the location to return to once
-  /// signed in (e.g. a `/vehicle/<id>` link opened while signed out).
+  /// signed in (e.g. a `/vehicles/<id>` link opened while signed out).
   static String withFrom(String path, String? from) {
     final target = safeFrom(from);
     if (target == null) return path;
@@ -100,13 +107,28 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         builder: (_, state) =>
             SignupScreen(from: state.uri.queryParameters['from']),
       ),
-      GoRoute(
-        path: AppRoutes.deck,
-        builder: (_, _) => const SwipeDeckScreen(),
-      ),
-      GoRoute(
-        path: AppRoutes.profile,
-        builder: (_, _) => const ProfileScreen(),
+      StatefulShellRoute.indexedStack(
+        builder: (_, _, navigationShell) => AppShell(navigationShell: navigationShell),
+        branches: [
+          StatefulShellBranch(routes: [
+            GoRoute(
+              path: AppRoutes.deck,
+              builder: (_, _) => const SwipeDeckScreen(),
+            ),
+          ]),
+          StatefulShellBranch(routes: [
+            GoRoute(
+              path: AppRoutes.saved,
+              builder: (_, _) => const SavedCarsScreen(),
+            ),
+          ]),
+          StatefulShellBranch(routes: [
+            GoRoute(
+              path: AppRoutes.profile,
+              builder: (_, _) => const ProfileScreen(),
+            ),
+          ]),
+        ],
       ),
       GoRoute(
         path: AppRoutes.search,
@@ -125,6 +147,11 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           carId: state.pathParameters['id']!,
           initialCar: state.extra as CarModel?,
         ),
+      ),
+      GoRoute(
+        path: AppRoutes.legacyVehicleDetail,
+        redirect: (_, state) =>
+            AppRoutes.vehicleDetailPath(state.pathParameters['id']!),
       ),
     ],
   );

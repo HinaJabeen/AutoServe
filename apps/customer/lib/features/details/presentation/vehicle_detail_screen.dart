@@ -11,7 +11,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared/shared.dart';
 
-import '../../discovery/presentation/widgets/book_test_drive_sheet.dart';
+import '../../leads/presentation/lead_inquiry_bottom_sheet.dart';
+import '../../leads/services/lead_service.dart';
 import '../providers/vehicle_detail_providers.dart';
 
 class VehicleDetailScreen extends ConsumerWidget {
@@ -32,7 +33,65 @@ class VehicleDetailScreen extends ConsumerWidget {
       ),
       loading: () => initialCar != null
           ? _DetailScaffold(car: initialCar!, dealer: null, dealerLoading: true)
-          : const Scaffold(body: Center(child: CircularProgressIndicator())),
+          : const _DetailSkeleton(),
+    );
+  }
+}
+
+/// First paint when there's no `initialCar` to show (deep link, refresh).
+class _DetailSkeleton extends StatelessWidget {
+  const _DetailSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    final p = context.palette;
+    Widget block(double height, {double? width, double radius = AppDimensions.radiusM}) =>
+        LoadingShimmer(
+          height: height,
+          width: width,
+          borderRadius: radius,
+          baseColor: p.surfaceElevated,
+          highlightColor: p.border,
+        );
+
+    return Scaffold(
+      appBar: AppBar(backgroundColor: Colors.transparent),
+      extendBodyBehindAppBar: true,
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: _kDetailMaxWidth),
+          child: ListView(
+            physics: const NeverScrollableScrollPhysics(),
+            padding: EdgeInsets.zero,
+            children: [
+              block(360, radius: 0),
+              Padding(
+                padding: const EdgeInsets.all(AppDimensions.paddingL),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    block(28, width: 240),
+                    const SizedBox(height: AppDimensions.paddingS),
+                    block(24, width: 140),
+                    const SizedBox(height: AppDimensions.paddingL),
+                    GridView.count(
+                      crossAxisCount: 2,
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      mainAxisSpacing: AppDimensions.paddingM,
+                      crossAxisSpacing: AppDimensions.paddingM,
+                      childAspectRatio: 2.6,
+                      children: List.generate(6, (_) => block(0)),
+                    ),
+                    const SizedBox(height: AppDimensions.paddingL),
+                    block(64),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
@@ -73,7 +132,12 @@ class _DetailScaffold extends StatelessWidget {
                     children: [
                       Text(car.displayTitle,
                           style: AppTextStyles.heading1.copyWith(color: p.textPrimary)),
-                      const SizedBox(height: 4),
+                      if (_specText(car, 'trim') case final trim?) ...[
+                        const SizedBox(height: 2),
+                        Text(trim,
+                            style: AppTextStyles.body.copyWith(color: p.textSecondary)),
+                      ],
+                      const SizedBox(height: AppDimensions.paddingS),
                       Text(car.formattedPrice,
                           style: AppTextStyles.price.copyWith(color: p.accentSecondary)),
                       const SizedBox(height: AppDimensions.paddingL),
@@ -98,10 +162,26 @@ class _DetailScaffold extends StatelessWidget {
           ),
         ),
       ),
-      bottomNavigationBar: _BookTestDriveBar(car: car),
+      bottomNavigationBar: _LeadActionBar(car: car),
     );
   }
 }
+
+/// A non-blank string from the `specs` jsonb bucket — body type, trim, etc.
+/// have no dedicated `cars` column (see vehicle_filters.dart).
+String? _specText(CarModel car, String key) {
+  final v = car.specs[key]?.toString().trim();
+  return (v == null || v.isEmpty) ? null : v;
+}
+
+String _titleCase(String s) => s
+    .split('_')
+    .map((w) => w.isEmpty ? w : '${w[0].toUpperCase()}${w.substring(1)}')
+    .join(' ');
+
+String _groupThousands(int n) => n
+    .toString()
+    .replaceAllMapped(RegExp(r'(\d)(?=(\d{3})+(?!\d))'), (m) => '${m[1]},');
 
 class _PhotoCarousel extends StatefulWidget {
   const _PhotoCarousel({required this.photoUrls});
@@ -201,20 +281,23 @@ class _SpecsGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Always-known fields from CarModel, plus whatever a dealer put in the
-    // flexible `specs` jsonb bucket (engine, trim, VIN, etc. all live there —
-    // there's no dedicated column for any of them in the live schema).
+    // The six headline specs first, then whatever else a dealer put in the
+    // flexible `specs` jsonb bucket (engine, VIN, etc. — no dedicated column).
+    // `body_type` and `trim` are shown above, so they're skipped in the tail.
+    final bodyType = _specText(car, 'body_type');
     final entries = <MapEntry<String, String>>[
-      MapEntry('Year', '${car.year}'),
-      if (car.mileage != null) MapEntry('Mileage', '${car.mileage} km'),
-      if (car.condition != null) MapEntry('Condition', _titleCase(car.condition!)),
+      if (car.mileage != null) MapEntry('Mileage', '${_groupThousands(car.mileage!)} km'),
       if (car.transmission != null) MapEntry('Transmission', _titleCase(car.transmission!)),
       if (car.fuelType != null) MapEntry('Fuel type', _titleCase(car.fuelType!)),
-      if (car.color != null) MapEntry('Color', _titleCase(car.color!)),
+      if (bodyType != null) MapEntry('Body type', _titleCase(bodyType)),
+      if (car.condition != null) MapEntry('Condition', _titleCase(car.condition!)),
+      if (car.color != null) MapEntry('Exterior color', _titleCase(car.color!)),
       ...car.specs.entries
+          .where((e) => e.key != 'body_type' && e.key != 'trim')
           .where((e) => e.value != null && e.value.toString().trim().isNotEmpty)
           .map((e) => MapEntry(_titleCase(e.key), e.value.toString())),
     ];
+    if (entries.isEmpty) return const SizedBox.shrink();
     final p = context.palette;
 
     return GridView.builder(
@@ -251,9 +334,6 @@ class _SpecsGrid extends StatelessWidget {
       },
     );
   }
-
-  String _titleCase(String s) =>
-      s.split('_').map((w) => w.isEmpty ? w : '${w[0].toUpperCase()}${w.substring(1)}').join(' ');
 }
 
 class _DealerCard extends StatelessWidget {
@@ -263,6 +343,16 @@ class _DealerCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final p = context.palette;
+    // Only `approved` dealers are readable by customers at all (RLS), so in
+    // practice every dealer shown here is verified; checked anyway so a
+    // policy change can't silently award the badge.
+    final verified = dealer.status == 'approved';
+    final location = [dealer.address, dealer.city]
+        .whereType<String>()
+        .map((s) => s.trim())
+        .where((s) => s.isNotEmpty)
+        .join(', ');
+
     return Container(
       padding: const EdgeInsets.all(AppDimensions.paddingM),
       decoration: BoxDecoration(
@@ -285,13 +375,40 @@ class _DealerCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(dealer.name, style: AppTextStyles.bodyBold.copyWith(color: p.textPrimary)),
-                const SizedBox(height: 2),
-                Text(dealer.city, style: AppTextStyles.caption.copyWith(color: p.textSecondary)),
+                Row(
+                  children: [
+                    Flexible(
+                      child: Text(dealer.name,
+                          overflow: TextOverflow.ellipsis,
+                          style: AppTextStyles.bodyBold.copyWith(color: p.textPrimary)),
+                    ),
+                    if (verified) ...[
+                      const SizedBox(width: 4),
+                      Tooltip(
+                        message: 'Verified dealer',
+                        child: Icon(Icons.verified_rounded, size: 16, color: p.accent),
+                      ),
+                    ],
+                  ],
+                ),
+                if (location.isNotEmpty) ...[
+                  const SizedBox(height: 2),
+                  Row(
+                    children: [
+                      Icon(Icons.location_on_outlined, size: 14, color: p.textSecondary),
+                      const SizedBox(width: 2),
+                      Expanded(
+                        child: Text(location,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: AppTextStyles.caption.copyWith(color: p.textSecondary)),
+                      ),
+                    ],
+                  ),
+                ],
               ],
             ),
           ),
-          Icon(Icons.call_outlined, size: 18, color: p.accentSecondary),
         ],
       ),
     );
@@ -310,8 +427,8 @@ class _DealerSkeleton extends StatelessWidget {
       );
 }
 
-class _BookTestDriveBar extends StatelessWidget {
-  const _BookTestDriveBar({required this.car});
+class _LeadActionBar extends StatelessWidget {
+  const _LeadActionBar({required this.car});
   final CarModel car;
 
   @override
@@ -329,17 +446,39 @@ class _BookTestDriveBar extends StatelessWidget {
           BoxShadow(color: p.shadowColor, blurRadius: 12, offset: const Offset(0, -2)),
         ],
       ),
+      // heightFactor: 1 — the bottomNavigationBar slot allows the full screen
+      // height, and a plain Center would expand to fill it, covering the body.
       child: Center(
+        heightFactor: 1,
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: _kDetailMaxWidth),
-          child: SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: () => showBookTestDriveSheet(context, car),
-              icon: Icon(Icons.directions_car_filled_rounded, size: 18, color: p.onAccent),
-              label: Text('Book Test Drive',
-                  style: AppTextStyles.button.copyWith(color: p.onAccent)),
-            ),
+          child: Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () => showLeadInquiryBottomSheet(
+                      context, car: car, type: LeadType.inquiry),
+                  icon: Icon(Icons.chat_bubble_outline_rounded, size: 18, color: p.accentSecondary),
+                  label: Text('Send Inquiry',
+                      style: AppTextStyles.button.copyWith(color: p.accentSecondary)),
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size.fromHeight(48),
+                    side: BorderSide(color: p.accentSecondary),
+                  ),
+                ),
+              ),
+              const SizedBox(width: AppDimensions.paddingM),
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: () => showLeadInquiryBottomSheet(
+                      context, car: car, type: LeadType.testDrive),
+                  icon: Icon(Icons.directions_car_filled_rounded, size: 18, color: p.onAccent),
+                  label: Text('Book Test Drive',
+                      style: AppTextStyles.button.copyWith(color: p.onAccent)),
+                  style: ElevatedButton.styleFrom(minimumSize: const Size.fromHeight(48)),
+                ),
+              ),
+            ],
           ),
         ),
       ),

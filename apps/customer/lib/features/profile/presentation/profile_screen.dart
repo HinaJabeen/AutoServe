@@ -2,10 +2,8 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:shared/shared.dart';
 
-import '../../../core/router/app_router.dart';
 import '../../../core/theme/theme_provider.dart';
 import '../../auth/models/customer_profile.dart';
 import '../../auth/providers/auth_providers.dart';
@@ -40,14 +38,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final profile = ref.watch(currentProfileProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Profile'),
-        // /profile can be opened directly on web (no page beneath to pop to).
-        leading: BackButton(
-          onPressed: () =>
-              context.canPop() ? context.pop() : context.go(AppRoutes.deck),
-        ),
-      ),
+      appBar: AppBar(title: const Text('Profile')),
       body: SafeArea(
         // Null only for the instant between signing out and the router's
         // redirect to /login.
@@ -139,6 +130,30 @@ class _ProfileHeader extends StatelessWidget {
           profile.email,
           textAlign: TextAlign.center,
           style: AppTextStyles.body.copyWith(color: p.textSecondary),
+        ),
+        const SizedBox(height: AppDimensions.paddingM),
+        // Only customer accounts get past sign-in (AuthNotifier._resolveProfile),
+        // so this always reads "Customer Account" in practice.
+        Container(
+          padding: const EdgeInsets.symmetric(
+              horizontal: AppDimensions.paddingM, vertical: 6),
+          decoration: BoxDecoration(
+            color: p.accent.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(AppDimensions.radiusFull),
+            border: Border.all(color: p.accent.withValues(alpha: 0.4)),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.verified_user_outlined, size: 14, color: p.accentSecondary),
+              const SizedBox(width: 6),
+              Text(
+                profile.isCustomer ? 'Customer Account' : 'Staff Account',
+                style: AppTextStyles.caption.copyWith(
+                    color: p.accentSecondary, fontWeight: FontWeight.w600),
+              ),
+            ],
+          ),
         ),
       ],
     );

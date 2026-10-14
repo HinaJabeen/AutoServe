@@ -46,14 +46,15 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
   @override
   Widget build(BuildContext context) {
     final carsAsync = ref.watch(availableCarsProvider);
+    final p = context.palette;
 
     return Padding(
       padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
       child: Container(
         constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.85),
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(AppDimensions.radiusL)),
+        decoration: BoxDecoration(
+          color: p.card,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(AppDimensions.radiusL)),
         ),
         child: carsAsync.when(
           loading: () => const SizedBox(
@@ -62,15 +63,18 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
           ),
           error: (e, _) => SizedBox(
             height: 160,
-            child: Center(child: Text('Could not load filter options', style: AppTextStyles.body)),
+            child: Center(
+              child: Text('Could not load filter options',
+                  style: AppTextStyles.body.copyWith(color: p.textSecondary)),
+            ),
           ),
-          data: (cars) => _buildForm(cars),
+          data: (cars) => _buildForm(cars, p),
         ),
       ),
     );
   }
 
-  Widget _buildForm(List<CarModel> cars) {
+  Widget _buildForm(List<CarModel> cars, AppPalette p) {
     final makes = cars.map((c) => c.make).toSet().toList()..sort();
     final models = (_draft.make == null
             ? cars
@@ -106,7 +110,7 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
               width: 40, height: 4,
               margin: const EdgeInsets.only(bottom: AppDimensions.paddingM),
               decoration: BoxDecoration(
-                color: AppColors.divider,
+                color: p.border,
                 borderRadius: BorderRadius.circular(AppDimensions.radiusFull),
               ),
             ),
@@ -114,7 +118,7 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Filter cars', style: AppTextStyles.heading2),
+              Text('Filter cars', style: AppTextStyles.heading2.copyWith(color: p.textPrimary)),
               TextButton(
                 onPressed: () => setState(() => _draft = const VehicleFilters()),
                 child: const Text('Reset'),
@@ -168,7 +172,8 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
                   )),
             )
           else
-            Text('Not enough listings to set a price range', style: AppTextStyles.caption),
+            Text('Not enough listings to set a price range',
+                style: AppTextStyles.caption.copyWith(color: p.textSecondary)),
 
           if (bodyTypes.isNotEmpty) ...[
             const SizedBox(height: AppDimensions.paddingM),
@@ -204,7 +209,7 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
                 ref.read(vehicleFiltersProvider.notifier).apply(_draft);
                 Navigator.of(context).pop();
               },
-              child: const Text('Apply filters', style: AppTextStyles.button),
+              child: Text('Apply filters', style: AppTextStyles.button.copyWith(color: p.onAccent)),
             ),
           ),
         ],
@@ -240,10 +245,10 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
       ? '${(v / 1000000).toStringAsFixed(1)}M'
       : '${(v / 1000).round()}K';
 
-  Widget _sectionLabel(String text) =>
-      Padding(
+  Widget _sectionLabel(String text) => Padding(
         padding: const EdgeInsets.only(bottom: AppDimensions.paddingS),
-        child: Text(text, style: AppTextStyles.bodyBold),
+        child: Text(text,
+            style: AppTextStyles.bodyBold.copyWith(color: context.palette.textPrimary)),
       );
 
   Widget _chipGroup({
@@ -251,6 +256,7 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
     required String? selected,
     required ValueChanged<String?> onSelected,
   }) {
+    final p = context.palette;
     return Wrap(
       spacing: AppDimensions.paddingS,
       runSpacing: AppDimensions.paddingS,
@@ -260,12 +266,14 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
           label: Text(_titleCase(option)),
           selected: isSelected,
           onSelected: (_) => onSelected(isSelected ? null : option),
-          selectedColor: AppColors.primary.withValues(alpha: 0.14),
+          showCheckmark: false,
+          backgroundColor: p.surfaceElevated,
+          selectedColor: p.accent,
           labelStyle: AppTextStyles.caption.copyWith(
-            color: isSelected ? AppColors.primary : AppColors.textSecondary,
-            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+            color: isSelected ? p.onAccent : p.textPrimary,
+            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
           ),
-          side: BorderSide(color: isSelected ? AppColors.primary : AppColors.divider),
+          side: BorderSide(color: isSelected ? p.accent : p.border),
         );
       }).toList(),
     );

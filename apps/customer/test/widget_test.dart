@@ -5,13 +5,19 @@ import 'package:customer/features/auth/models/customer_profile.dart';
 import 'package:customer/features/auth/presentation/login_screen.dart';
 import 'package:customer/features/auth/providers/auth_providers.dart';
 import 'package:customer/features/auth/services/auth_service.dart';
+import 'package:customer/features/details/presentation/vehicle_detail_screen.dart';
+import 'package:customer/features/details/providers/vehicle_detail_providers.dart';
+import 'package:customer/features/details/services/vehicle_detail_service.dart';
+import 'package:customer/features/discovery/services/local_swipe_store.dart';
 import 'package:customer/features/filters/models/vehicle_filters.dart';
 import 'package:customer/features/filters/providers/filter_providers.dart';
+import 'package:customer/features/leads/services/lead_service.dart';
 import 'package:customer/features/search/providers/search_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared/shared.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 CarModel _car({
@@ -330,6 +336,93 @@ void main() {
       expect(AppRoutes.withFrom(AppRoutes.login, 'https://evil.example'),
           '/login');
       expect(AppRoutes.withFrom(AppRoutes.login, '//evil.example'), '/login');
+    });
+  });
+
+  group('VehicleDetailScreen', () {
+    final dealer = DealershipModel(
+      id: 'd1', name: 'Emerald Motors', ownerName: 'Owner', email: 'e@x.co',
+      phone: '0300', city: 'Lahore', status: 'approved', createdAt: DateTime(2026),
+    );
+
+    Future<void> pumpDetail(WidgetTester tester, Future<VehicleDetail> Function() load) async {
+      await tester.binding.setSurfaceSize(const Size(400, 800));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await tester.pumpWidget(ProviderScope(
+        overrides: [vehicleDetailProvider('c1').overrideWith((ref) => load())],
+        child: MaterialApp(
+          theme: AppTheme.dark(),
+          home: const VehicleDetailScreen(carId: 'c1'),
+        ),
+      ));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('content is visible above the action bar, not covered by it', (tester) async {
+      await pumpDetail(tester, () async => VehicleDetail(car: _car(), dealer: dealer));
+
+      expect(find.text('2022 Toyota Corolla').hitTestable(), findsOneWidget);
+      expect(find.text('Emerald Motors').hitTestable(), findsOneWidget);
+      expect(find.text('Send Inquiry'), findsOneWidget);
+      expect(find.text('Book Test Drive'), findsOneWidget);
+      // The bar should hug its buttons, not stretch over the screen.
+      final bar = tester.getRect(find.byType(OutlinedButton));
+      expect(bar.top, greaterThan(600));
+    });
+
+    testWidgets('a failed fetch shows the error and a retry', (tester) async {
+      await pumpDetail(
+          tester, () => Future.error(VehicleDetailException('This listing is no longer available.')));
+
+      expect(find.text('This listing is no longer available.'), findsOneWidget);
+      expect(find.text('Retry'), findsOneWidget);
+    });
+  });
+
+  group('LocalSwipeStore', () {
+    setUp(() => SharedPreferences.setMockInitialValues({}));
+
+    test('one user never sees another user\'s swipes', () async {
+      await LocalSwipeStore('user-a').markInterested('c1');
+      await LocalSwipeStore('user-a').markPassed('c2');
+
+      expect(await LocalSwipeStore('user-b').loadDecidedIds(), isEmpty);
+      expect(await LocalSwipeStore('user-a').loadDecidedIds(), {'c1', 'c2'});
+    });
+
+    test('saving again moves a car to newest; unsaving removes it', () async {
+      final store = LocalSwipeStore('u');
+      await store.markInterested('c1');
+      await store.markInterested('c2');
+      await store.markInterested('c1');
+      expect(await store.loadInterestedIds(), ['c2', 'c1']);
+
+      await store.unmarkInterested('c2');
+      expect(await store.loadInterestedIds(), ['c1']);
+    });
+  });
+
+  group('LeadService', () {
+    test('source values stay inside the leads_source_check allow-list', () {
+      expect(LeadType.testDrive.source, 'test_drive_request');
+      expect(LeadType.inquiry.source, 'inquiry');
+    });
+
+    test('notes carry the date, message, and contact email', () {
+      final notes = LeadService.buildNotes(
+        type: LeadType.testDrive,
+        email: 'a@b.co',
+        message: '  Mornings please ',
+        preferredDate: DateTime(2026, 3, 7),
+      );
+      expect(notes,
+          'Test drive requested for 2026-03-07.\nMessage: Mornings please\nContact email: a@b.co');
+    });
+
+    test('a blank message is left out of an inquiry', () {
+      final notes = LeadService.buildNotes(
+          type: LeadType.inquiry, email: 'a@b.co', message: '   ');
+      expect(notes, 'Vehicle inquiry.\nContact email: a@b.co');
     });
   });
 }
