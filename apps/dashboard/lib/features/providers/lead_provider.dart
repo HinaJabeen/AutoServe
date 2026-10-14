@@ -84,8 +84,9 @@ final dealerLeadsStreamProvider = StreamProvider<List<LeadModel>>((ref) {
               'consumer_name':  r['customer_name']?.toString() ?? 'Unknown',
               'consumer_phone': r['customer_phone']?.toString(),
               'consumer_email': null,
-              // source='walk_in' is still an inquiry in this context.
-              'type':           'inquiry',
+              // `leads` has no type column; the intake channel lives in
+              // `source` ('test_drive_request', 'inquiry', 'walk_in', ...).
+              'type':           r['source']?.toString()        ?? 'inquiry',
               // stage → status column rename
               'status':         r['stage']?.toString()         ?? 'new',
               'notes':          r['notes']?.toString(),

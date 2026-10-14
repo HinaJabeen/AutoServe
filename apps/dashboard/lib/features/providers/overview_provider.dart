@@ -26,6 +26,8 @@ class DashboardMetrics {
     required this.soldThisMonth,
     required this.activeLeadsCount,
     required this.grossStockValue,
+    required this.leadsThisMonth,
+    required this.leadsByStage,
   });
   final int totalVehicles;
   final int availableVehicles;
@@ -38,6 +40,10 @@ class DashboardMetrics {
   final int activeLeadsCount;
   /// sum(price) across all `available` cars — the dealer's current stock value.
   final double grossStockValue;
+  /// Leads created since the 1st of the current month.
+  final int leadsThisMonth;
+  /// Every lead counted by `leads.stage` (all stages present, zero-filled).
+  final Map<String, int> leadsByStage;
 }
 
 class MonthlyRevenue {
@@ -116,6 +122,11 @@ final dealerLeadsStreamProvider = StreamProvider<List<LeadModel>>((ref) {
 
 // ─── Dashboard metrics ────────────────────────────────────────────────────────
 
+/// `leads.stage` values in pipeline order.
+const leadPipelineStages = [
+  'new', 'contacted', 'test_drive_scheduled', 'negotiating', 'closed_won', 'closed_lost',
+];
+
 final dashboardMetricsProvider = Provider<AsyncValue<DashboardMetrics>>((ref) {
   final carsAsync  = ref.watch(dealerCarsStreamProvider);
   final leadsAsync = ref.watch(dealerLeadsStreamProvider);
@@ -150,6 +161,12 @@ final dashboardMetricsProvider = Provider<AsyncValue<DashboardMetrics>>((ref) {
     newLeadsToday: leads.where((l) {
       try { return l.createdAt.toLocal().isAfter(startOfDay); } catch (_) { return false; }
     }).length,
+    leadsThisMonth:
+        leads.where((l) => !l.createdAt.toLocal().isBefore(startOfMonth)).length,
+    leadsByStage: {
+      for (final stage in leadPipelineStages)
+        stage: leads.where((l) => l.status == stage).length,
+    },
   ));
 });
 

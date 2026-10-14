@@ -10,6 +10,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared/shared.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../leads/presentation/lead_inquiry_bottom_sheet.dart';
 import '../../leads/services/lead_service.dart';
@@ -45,14 +46,17 @@ class _DetailSkeleton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final p = context.palette;
-    Widget block(double height, {double? width, double radius = AppDimensions.radiusM}) =>
-        LoadingShimmer(
-          height: height,
-          width: width,
-          borderRadius: radius,
-          baseColor: p.surfaceElevated,
-          highlightColor: p.border,
-        );
+    Widget block(
+      double height, {
+      double? width,
+      double radius = AppDimensions.radiusM,
+    }) => LoadingShimmer(
+      height: height,
+      width: width,
+      borderRadius: radius,
+      baseColor: p.surfaceElevated,
+      highlightColor: p.border,
+    );
 
     return Scaffold(
       appBar: AppBar(backgroundColor: Colors.transparent),
@@ -102,7 +106,11 @@ class _DetailSkeleton extends StatelessWidget {
 const _kDetailMaxWidth = 600.0;
 
 class _DetailScaffold extends StatelessWidget {
-  const _DetailScaffold({required this.car, required this.dealer, this.dealerLoading = false});
+  const _DetailScaffold({
+    required this.car,
+    required this.dealer,
+    this.dealerLoading = false,
+  });
   final CarModel car;
   final DealershipModel? dealer;
   final bool dealerLoading;
@@ -130,28 +138,69 @@ class _DetailScaffold extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(car.displayTitle,
-                          style: AppTextStyles.heading1.copyWith(color: p.textPrimary)),
+                      Text(
+                        car.displayTitle,
+                        style: AppTextStyles.heading1.copyWith(
+                          color: p.textPrimary,
+                        ),
+                      ),
                       if (_specText(car, 'trim') case final trim?) ...[
                         const SizedBox(height: 2),
-                        Text(trim,
-                            style: AppTextStyles.body.copyWith(color: p.textSecondary)),
+                        Text(
+                          trim,
+                          style: AppTextStyles.body.copyWith(
+                            color: p.textSecondary,
+                          ),
+                        ),
                       ],
                       const SizedBox(height: AppDimensions.paddingS),
-                      Text(car.formattedPrice,
-                          style: AppTextStyles.price.copyWith(color: p.accentSecondary)),
+                      Text(
+                        car.formattedPrice,
+                        style: AppTextStyles.price.copyWith(
+                          color: p.accentSecondary,
+                        ),
+                      ),
+                      // Older listings stored it in specs before the column existed.
+                      if ((car.description ?? _specText(car, 'description'))?.trim()
+                          case final description?
+                          when description.isNotEmpty) ...[
+                        const SizedBox(height: AppDimensions.paddingL),
+                        Text(
+                          'About this car',
+                          style: AppTextStyles.heading3.copyWith(
+                            color: p.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(height: AppDimensions.paddingS),
+                        Text(
+                          description,
+                          style: AppTextStyles.body.copyWith(
+                            color: p.textSecondary,
+                            height: 1.5,
+                          ),
+                        ),
+                      ],
                       const SizedBox(height: AppDimensions.paddingL),
-                      Text('Specifications',
-                          style: AppTextStyles.heading3.copyWith(color: p.textPrimary)),
+                      Text(
+                        'Specifications',
+                        style: AppTextStyles.heading3.copyWith(
+                          color: p.textPrimary,
+                        ),
+                      ),
                       const SizedBox(height: AppDimensions.paddingM),
                       _SpecsGrid(car: car),
                       const SizedBox(height: AppDimensions.paddingL),
-                      Text('Dealer', style: AppTextStyles.heading3.copyWith(color: p.textPrimary)),
+                      Text(
+                        'Dealer',
+                        style: AppTextStyles.heading3.copyWith(
+                          color: p.textPrimary,
+                        ),
+                      ),
                       const SizedBox(height: AppDimensions.paddingM),
                       if (dealerLoading)
                         const _DealerSkeleton()
                       else if (dealer != null)
-                        _DealerCard(dealer: dealer!),
+                        _DealerCard(dealer: dealer!, car: car),
                     ],
                   ),
                 ),
@@ -179,9 +228,10 @@ String _titleCase(String s) => s
     .map((w) => w.isEmpty ? w : '${w[0].toUpperCase()}${w.substring(1)}')
     .join(' ');
 
-String _groupThousands(int n) => n
-    .toString()
-    .replaceAllMapped(RegExp(r'(\d)(?=(\d{3})+(?!\d))'), (m) => '${m[1]},');
+String _groupThousands(int n) => n.toString().replaceAllMapped(
+  RegExp(r'(\d)(?=(\d{3})+(?!\d))'),
+  (m) => '${m[1]},',
+);
 
 class _PhotoCarousel extends StatefulWidget {
   const _PhotoCarousel({required this.photoUrls});
@@ -214,7 +264,11 @@ class _PhotoCarouselState extends State<_PhotoCarousel> {
           if (photos.isEmpty)
             Container(
               color: p.surfaceElevated,
-              child: Icon(Icons.directions_car_rounded, size: 72, color: p.textTertiary),
+              child: Icon(
+                Icons.directions_car_rounded,
+                size: 72,
+                color: p.textTertiary,
+              ),
             )
           else
             PageView.builder(
@@ -226,14 +280,20 @@ class _PhotoCarouselState extends State<_PhotoCarousel> {
                 fit: BoxFit.cover,
                 errorBuilder: (_, _, _) => Container(
                   color: p.surfaceElevated,
-                  child: Icon(Icons.broken_image_outlined, size: 48, color: p.textTertiary),
+                  child: Icon(
+                    Icons.broken_image_outlined,
+                    size: 48,
+                    color: p.textTertiary,
+                  ),
                 ),
               ),
             ),
 
           // Legibility for the back button over whatever photo is showing.
           const Positioned(
-            left: 0, right: 0, top: 0,
+            left: 0,
+            right: 0,
+            top: 0,
             child: SizedBox(
               height: 100,
               child: DecoratedBox(
@@ -251,7 +311,8 @@ class _PhotoCarouselState extends State<_PhotoCarousel> {
           if (photos.length > 1)
             Positioned(
               bottom: AppDimensions.paddingM,
-              left: 0, right: 0,
+              left: 0,
+              right: 0,
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: List.generate(photos.length, (i) {
@@ -262,8 +323,12 @@ class _PhotoCarouselState extends State<_PhotoCarousel> {
                     width: active ? 20 : 6,
                     height: 6,
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: active ? 0.95 : 0.5),
-                      borderRadius: BorderRadius.circular(AppDimensions.radiusFull),
+                      color: Colors.white.withValues(
+                        alpha: active ? 0.95 : 0.5,
+                      ),
+                      borderRadius: BorderRadius.circular(
+                        AppDimensions.radiusFull,
+                      ),
                     ),
                   );
                 }),
@@ -281,23 +346,25 @@ class _SpecsGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // The six headline specs first, then whatever else a dealer put in the
-    // flexible `specs` jsonb bucket (engine, VIN, etc. — no dedicated column).
-    // `body_type` and `trim` are shown above, so they're skipped in the tail.
-    final bodyType = _specText(car, 'body_type');
-    final entries = <MapEntry<String, String>>[
-      if (car.mileage != null) MapEntry('Mileage', '${_groupThousands(car.mileage!)} km'),
-      if (car.transmission != null) MapEntry('Transmission', _titleCase(car.transmission!)),
-      if (car.fuelType != null) MapEntry('Fuel type', _titleCase(car.fuelType!)),
-      if (bodyType != null) MapEntry('Body type', _titleCase(bodyType)),
-      if (car.condition != null) MapEntry('Condition', _titleCase(car.condition!)),
-      if (car.color != null) MapEntry('Exterior color', _titleCase(car.color!)),
+    // The headline specs always render — a missing value shows "Not
+    // specified" rather than the grid silently vanishing (bulk-imported
+    // listings often lack them). Then any extra `specs` jsonb entries
+    // (engine, VIN, ...); body_type/trim/description are shown elsewhere.
+    String? text(String? v) => (v == null || v.trim().isEmpty) ? null : _titleCase(v.trim());
+    final mileage = car.mileage;
+    final entries = <MapEntry<String, String?>>[
+      MapEntry('Mileage', mileage == null ? null : '${_groupThousands(mileage)} km'),
+      MapEntry('Transmission', text(car.transmission)),
+      MapEntry('Fuel type', text(car.fuelType)),
+      MapEntry('Condition', text(car.condition)),
+      MapEntry('Color', text(car.color)),
+      if (text(_specText(car, 'body_type')) case final bodyType?)
+        MapEntry('Body type', bodyType),
       ...car.specs.entries
-          .where((e) => e.key != 'body_type' && e.key != 'trim')
+          .where((e) => !const {'body_type', 'trim', 'description'}.contains(e.key))
           .where((e) => e.value != null && e.value.toString().trim().isNotEmpty)
           .map((e) => MapEntry(_titleCase(e.key), e.value.toString())),
     ];
-    if (entries.isEmpty) return const SizedBox.shrink();
     final p = context.palette;
 
     return GridView.builder(
@@ -308,12 +375,17 @@ class _SpecsGrid extends StatelessWidget {
         crossAxisCount: 2,
         mainAxisSpacing: AppDimensions.paddingM,
         crossAxisSpacing: AppDimensions.paddingM,
-        childAspectRatio: 2.6,
+        // A fixed height, not an aspect ratio: on narrow phones a ratio made
+        // the tiles too short for the label + value and they overflowed.
+        mainAxisExtent: 68,
       ),
       itemBuilder: (context, i) {
         final entry = entries[i];
         return Container(
-          padding: const EdgeInsets.symmetric(horizontal: AppDimensions.paddingM, vertical: AppDimensions.paddingS),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppDimensions.paddingM,
+            vertical: AppDimensions.paddingS,
+          ),
           decoration: BoxDecoration(
             color: p.surfaceElevated,
             borderRadius: BorderRadius.circular(AppDimensions.radiusM),
@@ -323,11 +395,21 @@ class _SpecsGrid extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(entry.key, style: AppTextStyles.caption.copyWith(color: p.textSecondary)),
+              Text(
+                entry.key,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: AppTextStyles.caption.copyWith(color: p.textSecondary),
+              ),
               const SizedBox(height: 2),
-              Text(entry.value,
-                  style: AppTextStyles.bodyBold.copyWith(color: p.textPrimary),
-                  overflow: TextOverflow.ellipsis),
+              Text(
+                entry.value ?? 'Not specified',
+                style: entry.value == null
+                    ? AppTextStyles.body.copyWith(color: p.textMuted)
+                    : AppTextStyles.bodyBold.copyWith(color: p.textPrimary),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
             ],
           ),
         );
@@ -337,8 +419,18 @@ class _SpecsGrid extends StatelessWidget {
 }
 
 class _DealerCard extends StatelessWidget {
-  const _DealerCard({required this.dealer});
+  const _DealerCard({required this.dealer, required this.car});
   final DealershipModel dealer;
+  final CarModel car;
+
+  Future<void> _openWhatsApp(BuildContext context, Uri uri) async {
+    final messenger = ScaffoldMessenger.of(context);
+    if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+      messenger.showSnackBar(
+        const SnackBar(content: Text("Couldn't open WhatsApp.")),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -352,6 +444,13 @@ class _DealerCard extends StatelessWidget {
         .map((s) => s.trim())
         .where((s) => s.isNotEmpty)
         .join(', ');
+    final hours = dealer.businessHours?.trim();
+    final whatsApp = ContactLinks.whatsApp(
+      dealer.phone,
+      message:
+          'Hi, I am interested in your ${car.year} ${car.make} ${car.model} '
+          'listed on AutoServe.',
+    );
 
     return Container(
       padding: const EdgeInsets.all(AppDimensions.paddingM),
@@ -360,55 +459,108 @@ class _DealerCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppDimensions.radiusM),
         border: Border.all(color: p.border),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          CircleAvatar(
-            radius: 22,
-            backgroundColor: p.accent.withValues(alpha: 0.12),
-            child: Text(
-              dealer.name.isNotEmpty ? dealer.name[0].toUpperCase() : '?',
-              style: AppTextStyles.heading3.copyWith(color: p.accentSecondary),
-            ),
-          ),
-          const SizedBox(width: AppDimensions.paddingM),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
+          Row(
+            children: [
+              CircleAvatar(
+                radius: 22,
+                backgroundColor: p.accent.withValues(alpha: 0.12),
+                child: Text(
+                  dealer.name.isNotEmpty ? dealer.name[0].toUpperCase() : '?',
+                  style: AppTextStyles.heading3.copyWith(
+                    color: p.accentSecondary,
+                  ),
+                ),
+              ),
+              const SizedBox(width: AppDimensions.paddingM),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Flexible(
-                      child: Text(dealer.name,
-                          overflow: TextOverflow.ellipsis,
-                          style: AppTextStyles.bodyBold.copyWith(color: p.textPrimary)),
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            dealer.name,
+                            overflow: TextOverflow.ellipsis,
+                            style: AppTextStyles.bodyBold.copyWith(
+                              color: p.textPrimary,
+                            ),
+                          ),
+                        ),
+                        if (verified) ...[
+                          const SizedBox(width: 4),
+                          Tooltip(
+                            message: 'Verified dealer',
+                            child: Icon(
+                              Icons.verified_rounded,
+                              size: 16,
+                              color: p.accent,
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
-                    if (verified) ...[
-                      const SizedBox(width: 4),
-                      Tooltip(
-                        message: 'Verified dealer',
-                        child: Icon(Icons.verified_rounded, size: 16, color: p.accent),
+                    if (location.isNotEmpty) ...[
+                      const SizedBox(height: 2),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.location_on_outlined,
+                            size: 14,
+                            color: p.textSecondary,
+                          ),
+                          const SizedBox(width: 2),
+                          Expanded(
+                            child: Text(
+                              location,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: AppTextStyles.caption.copyWith(
+                                color: p.textSecondary,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ],
                 ),
-                if (location.isNotEmpty) ...[
-                  const SizedBox(height: 2),
-                  Row(
-                    children: [
-                      Icon(Icons.location_on_outlined, size: 14, color: p.textSecondary),
-                      const SizedBox(width: 2),
-                      Expanded(
-                        child: Text(location,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: AppTextStyles.caption.copyWith(color: p.textSecondary)),
-                      ),
-                    ],
+              ),
+            ],
+          ),
+          if (hours != null && hours.isNotEmpty) ...[
+            const SizedBox(height: AppDimensions.paddingM),
+            Row(
+              children: [
+                Icon(Icons.schedule_rounded, size: 16, color: p.textSecondary),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    hours,
+                    style: AppTextStyles.caption.copyWith(color: p.textPrimary),
                   ),
-                ],
+                ),
               ],
             ),
-          ),
+          ],
+          if (whatsApp != null) ...[
+            const SizedBox(height: AppDimensions.paddingM),
+            ElevatedButton.icon(
+              onPressed: () => _openWhatsApp(context, whatsApp),
+              icon: Icon(Icons.chat_rounded, size: 18, color: p.onAccent),
+              label: Text(
+                'Contact Dealer via WhatsApp',
+                style: AppTextStyles.button.copyWith(color: p.onAccent),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: p.success,
+                minimumSize: const Size.fromHeight(44),
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -419,12 +571,12 @@ class _DealerSkeleton extends StatelessWidget {
   const _DealerSkeleton();
   @override
   Widget build(BuildContext context) => Container(
-        height: 64,
-        decoration: BoxDecoration(
-          color: context.palette.surfaceElevated,
-          borderRadius: BorderRadius.circular(AppDimensions.radiusM),
-        ),
-      );
+    height: 64,
+    decoration: BoxDecoration(
+      color: context.palette.surfaceElevated,
+      borderRadius: BorderRadius.circular(AppDimensions.radiusM),
+    ),
+  );
 }
 
 class _LeadActionBar extends StatelessWidget {
@@ -436,14 +588,20 @@ class _LeadActionBar extends StatelessWidget {
     final p = context.palette;
     return Container(
       padding: EdgeInsets.fromLTRB(
-        AppDimensions.paddingL, AppDimensions.paddingM, AppDimensions.paddingL,
+        AppDimensions.paddingL,
+        AppDimensions.paddingM,
+        AppDimensions.paddingL,
         AppDimensions.paddingM + MediaQuery.of(context).padding.bottom,
       ),
       decoration: BoxDecoration(
         color: p.surface,
         border: Border(top: BorderSide(color: p.border)),
         boxShadow: [
-          BoxShadow(color: p.shadowColor, blurRadius: 12, offset: const Offset(0, -2)),
+          BoxShadow(
+            color: p.shadowColor,
+            blurRadius: 12,
+            offset: const Offset(0, -2),
+          ),
         ],
       ),
       // heightFactor: 1 — the bottomNavigationBar slot allows the full screen
@@ -457,10 +615,21 @@ class _LeadActionBar extends StatelessWidget {
               Expanded(
                 child: OutlinedButton.icon(
                   onPressed: () => showLeadInquiryBottomSheet(
-                      context, car: car, type: LeadType.inquiry),
-                  icon: Icon(Icons.chat_bubble_outline_rounded, size: 18, color: p.accentSecondary),
-                  label: Text('Send Inquiry',
-                      style: AppTextStyles.button.copyWith(color: p.accentSecondary)),
+                    context,
+                    car: car,
+                    type: LeadType.inquiry,
+                  ),
+                  icon: Icon(
+                    Icons.chat_bubble_outline_rounded,
+                    size: 18,
+                    color: p.accentSecondary,
+                  ),
+                  label: Text(
+                    'Send Inquiry',
+                    style: AppTextStyles.button.copyWith(
+                      color: p.accentSecondary,
+                    ),
+                  ),
                   style: OutlinedButton.styleFrom(
                     minimumSize: const Size.fromHeight(48),
                     side: BorderSide(color: p.accentSecondary),
@@ -471,11 +640,22 @@ class _LeadActionBar extends StatelessWidget {
               Expanded(
                 child: ElevatedButton.icon(
                   onPressed: () => showLeadInquiryBottomSheet(
-                      context, car: car, type: LeadType.testDrive),
-                  icon: Icon(Icons.directions_car_filled_rounded, size: 18, color: p.onAccent),
-                  label: Text('Book Test Drive',
-                      style: AppTextStyles.button.copyWith(color: p.onAccent)),
-                  style: ElevatedButton.styleFrom(minimumSize: const Size.fromHeight(48)),
+                    context,
+                    car: car,
+                    type: LeadType.testDrive,
+                  ),
+                  icon: Icon(
+                    Icons.directions_car_filled_rounded,
+                    size: 18,
+                    color: p.onAccent,
+                  ),
+                  label: Text(
+                    'Book Test Drive',
+                    style: AppTextStyles.button.copyWith(color: p.onAccent),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    minimumSize: const Size.fromHeight(48),
+                  ),
                 ),
               ),
             ],
@@ -504,9 +684,11 @@ class _DetailError extends StatelessWidget {
             children: [
               Icon(Icons.error_outline_rounded, size: 48, color: p.error),
               const SizedBox(height: AppDimensions.paddingM),
-              Text(message,
-                  style: AppTextStyles.body.copyWith(color: p.textPrimary),
-                  textAlign: TextAlign.center),
+              Text(
+                message,
+                style: AppTextStyles.body.copyWith(color: p.textPrimary),
+                textAlign: TextAlign.center,
+              ),
               const SizedBox(height: AppDimensions.paddingM),
               TextButton(onPressed: onRetry, child: const Text('Retry')),
             ],

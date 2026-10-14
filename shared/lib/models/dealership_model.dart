@@ -8,6 +8,9 @@ class DealershipModel {
   final String? address;
   final String? logoUrl;
   final String status;
+
+  /// Free-text opening hours, e.g. "Mon–Sat 10am–8pm".
+  final String? businessHours;
   final DateTime createdAt;
 
   DealershipModel({
@@ -21,6 +24,7 @@ class DealershipModel {
     this.logoUrl,
     required this.status,
     required this.createdAt,
+    this.businessHours,
   });
 
   factory DealershipModel.fromJson(Map<String, dynamic> json) {
@@ -33,6 +37,7 @@ class DealershipModel {
       city: json['city'] as String? ?? '',
       address: json['address'] as String?,
       logoUrl: json['logo_url'] as String?,
+      businessHours: json['business_hours'] as String?,
       status: json['status'] as String? ?? 'active',
       createdAt: json['created_at'] != null
           ? DateTime.tryParse(json['created_at'].toString()) ?? DateTime.now()
@@ -50,6 +55,7 @@ class DealershipModel {
       'city': city,
       'address': address,
       'logo_url': logoUrl,
+      'business_hours': businessHours,
       'status': status,
       'created_at': createdAt.toIso8601String(),
     };

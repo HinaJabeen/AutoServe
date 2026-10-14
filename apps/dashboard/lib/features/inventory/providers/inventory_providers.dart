@@ -165,6 +165,17 @@ class InventoryListNotifier extends AsyncNotifier<InventoryPageState> {
     ));
   }
 
+  /// Persists a single car's status, then patches it in place. Throws on
+  /// failure (nothing changed server-side, so the card keeps its old status).
+  Future<void> setStatus(CarModel car, String status) async {
+    final service = _service;
+    if (service == null) {
+      throw InventoryException('Not signed in to a dealership.');
+    }
+    await service.updateStatus(car.id, status);
+    patchCar(car.copyWith(status: status));
+  }
+
   /// Deletes [carId] via the service and, only once that succeeds, removes
   /// it from the in-memory page. Throws on failure — the caller is expected
   /// to catch it and show the error, and the car stays in the list since

@@ -12,9 +12,10 @@
 -- covering every value the app sends today plus the two channels named in
 -- the original column comment ('walk_in', 'online' — dashboard-side manual
 -- entry) and 'swipe_interest' (the right-swipe lead, per
--- docs/architecture.md §8.2, not wired up yet but part of the same plan).
+-- docs/architecture.md §8.2, not wired up yet but part of the same plan),
+-- and 'inquiry' (the detail screen's "Send Inquiry" — LeadType.inquiry).
 alter table leads drop constraint if exists leads_source_check;
 
 alter table leads add constraint leads_source_check
   check (source is null or source in
-    ('walk_in', 'online', 'test_drive_request', 'swipe_interest'));
+    ('walk_in', 'online', 'test_drive_request', 'swipe_interest', 'inquiry'));

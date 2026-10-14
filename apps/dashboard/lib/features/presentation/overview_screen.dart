@@ -95,21 +95,107 @@ class _MetricsRow extends StatelessWidget {
       _MetricCardData(icon: Icons.directions_car_filled_rounded, display: '${metrics.totalVehicles}', label: 'Total Vehicles'),
       _MetricCardData(icon: Icons.check_circle_outline_rounded, display: '${metrics.availableVehicles}', label: 'Available'),
       _MetricCardData(icon: Icons.bookmark_border_rounded, display: '${metrics.reservedVehicles}', label: 'Reserved'),
+      _MetricCardData(icon: Icons.sell_rounded, display: '${metrics.soldVehicles}', label: 'Sold (all time)'),
       _MetricCardData(icon: Icons.person_add_alt_1_rounded, display: '${metrics.newLeadsToday}', label: 'New Leads Today'),
+      _MetricCardData(icon: Icons.calendar_month_outlined, display: '${metrics.leadsThisMonth}', label: 'Leads This Month'),
     ];
 
-    return Wrap(
-      spacing: AppDimensions.paddingM,
-      runSpacing: AppDimensions.paddingM,
-      children: List.generate(cards.length, (i) {
-        return SizedBox(
-          width: 210,
-          child: _StaggeredFadeIn(
-            delay: Duration(milliseconds: 80 * (i + 1)),
-            child: _MetricCard(data: cards[i], palette: palette),
-          ),
-        );
-      }),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Wrap(
+          spacing: AppDimensions.paddingM,
+          runSpacing: AppDimensions.paddingM,
+          children: List.generate(cards.length, (i) {
+            return SizedBox(
+              width: 210,
+              child: _StaggeredFadeIn(
+                delay: Duration(milliseconds: 80 * (i + 1)),
+                child: _MetricCard(data: cards[i], palette: palette),
+              ),
+            );
+          }),
+        ),
+        const SizedBox(height: AppDimensions.paddingL),
+        _PipelineBreakdown(leadsByStage: metrics.leadsByStage, palette: palette),
+      ],
+    );
+  }
+}
+
+class _PipelineBreakdown extends StatelessWidget {
+  const _PipelineBreakdown({required this.leadsByStage, required this.palette});
+  final Map<String, int> leadsByStage;
+  final AppPalette palette;
+
+  static const _labels = {
+    'new': 'New Inquiry',
+    'contacted': 'Contacted',
+    'test_drive_scheduled': 'Test Drive',
+    'negotiating': 'Negotiation',
+    'closed_won': 'Won',
+    'closed_lost': 'Lost',
+  };
+
+  Color _color(String stage) => switch (stage) {
+        'closed_won' => palette.success,
+        'closed_lost' => palette.textMuted,
+        _ => palette.accent,
+      };
+
+  @override
+  Widget build(BuildContext context) {
+    final p = palette;
+    final total = leadsByStage.values.fold(0, (a, b) => a + b);
+    final maxCount = leadsByStage.values.fold(0, (a, b) => a > b ? a : b);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(AppDimensions.paddingL),
+      decoration: BoxDecoration(
+        color: p.surface,
+        borderRadius: BorderRadius.circular(AppDimensions.radiusL),
+        border: Border.all(color: p.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Lead Pipeline',
+              style: AppTextStyles.bodyBold.copyWith(color: p.textPrimary, fontSize: 15)),
+          const SizedBox(height: 2),
+          Text('$total leads by stage · live',
+              style: AppTextStyles.caption.copyWith(color: p.textTertiary, fontSize: 12)),
+          const SizedBox(height: AppDimensions.paddingM),
+          for (final e in leadsByStage.entries)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: Row(children: [
+                SizedBox(
+                  width: 110,
+                  child: Text(_labels[e.key] ?? e.key,
+                      style: AppTextStyles.caption.copyWith(color: p.textSecondary, fontSize: 12)),
+                ),
+                Expanded(
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(4),
+                    child: LinearProgressIndicator(
+                      value: maxCount == 0 ? 0 : e.value / maxCount,
+                      minHeight: 10,
+                      backgroundColor: p.border.withValues(alpha: 0.5),
+                      color: _color(e.key),
+                    ),
+                  ),
+                ),
+                SizedBox(
+                  width: 40,
+                  child: Text('${e.value}',
+                      textAlign: TextAlign.right,
+                      style: AppTextStyles.bodyBold.copyWith(color: p.textPrimary, fontSize: 13)),
+                ),
+              ]),
+            ),
+        ],
+      ),
     );
   }
 }
@@ -136,7 +222,8 @@ class _MetricCard extends StatelessWidget {
         border: Border.all(color: palette.border),
         boxShadow: [
           BoxShadow(
-              color: palette.shadowColor.withValues(alpha: 0.35),
+              color: palette.shadowColor.withValues(
+                  alpha: Theme.of(context).brightness == Brightness.dark ? 0.35 : 0.06),
               blurRadius: 18, offset: const Offset(0, 6)),
           BoxShadow(
               color: palette.accent.withValues(alpha: 0.04),

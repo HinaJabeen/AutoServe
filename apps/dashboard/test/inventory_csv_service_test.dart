@@ -69,6 +69,20 @@ void main() {
     expect(InventoryService.buildInsertPayload(car, 'd').containsKey('specs'), isFalse);
   });
 
+  test('common header spellings are aliased; unknown ones are reported, not dropped silently', () {
+    final result = service.import(
+      'Brand,Model,Year,Price,Status,KM,Colour,Gear,Fuel,Seats\n'
+      'Honda,City,2021,4100000,available,"19,000",White,Auto,Petrol,5\n',
+    );
+    final car = result.validCars.single;
+    expect(car.make, 'Honda');
+    expect(car.mileage, 19000);
+    expect(car.color, 'White');
+    expect(car.transmission, 'automatic');
+    expect(car.fuelType, 'petrol');
+    expect(result.ignoredColumns, ['seats']);
+  });
+
   test('optional columns may be missing; required ones may not', () {
     final ok = service.import('make,model,year,price,status\nToyota,Yaris,2022,4000000,available\n');
     expect(ok.errors, isEmpty);

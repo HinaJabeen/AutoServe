@@ -37,10 +37,17 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
   // discards in-progress edits rather than live-filtering the deck per tap.
   late VehicleFilters _draft;
 
+  // Cars this user already swiped — the deck hides them, so the live
+  // "Show N cars" count must too.
+  Set<String> _decidedIds = const {};
+
   @override
   void initState() {
     super.initState();
     _draft = ref.read(vehicleFiltersProvider);
+    ref.read(localSwipeStoreProvider).loadDecidedIds().then((ids) {
+      if (mounted) setState(() => _decidedIds = ids);
+    });
   }
 
   @override
@@ -75,6 +82,8 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
   }
 
   Widget _buildForm(List<CarModel> cars, AppPalette p) {
+    final matchCount =
+        cars.where((c) => !_decidedIds.contains(c.id) && _draft.matches(c)).length;
     final makes = cars.map((c) => c.make).toSet().toList()..sort();
     final models = (_draft.make == null
             ? cars
@@ -131,16 +140,9 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
           _chipGroup(
             options: makes,
             selected: _draft.make,
-            onSelected: (v) => setState(() {
-              // Changing make invalidates a model pick that no longer fits.
-              _draft = VehicleFilters(
-                make: v,
-                model: null,
-                minPrice: _draft.minPrice, maxPrice: _draft.maxPrice,
-                bodyType: _draft.bodyType,
-                transmission: _draft.transmission, fuelType: _draft.fuelType,
-              );
-            }),
+            // Changing make invalidates a model pick that no longer fits.
+            onSelected: (v) => setState(
+                () => _draft = _draft.copyWith(make: () => v, model: () => null)),
           ),
 
           if (models.isNotEmpty) ...[
@@ -149,7 +151,7 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
             _chipGroup(
               options: models,
               selected: _draft.model,
-              onSelected: (v) => setState(() => _draft = _copy(_draft, model: v)),
+              onSelected: (v) => setState(() => _draft = _draft.copyWith(model: () => v)),
             ),
           ],
 
@@ -165,10 +167,9 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
                 _priceLabel(priceRange.start),
                 _priceLabel(priceRange.end),
               ),
-              onChanged: (v) => setState(() => _draft = _copy(
-                    _draft,
-                    minPrice: v.start,
-                    maxPrice: v.end,
+              onChanged: (v) => setState(() => _draft = _draft.copyWith(
+                    minPrice: () => v.start,
+                    maxPrice: () => v.end,
                   )),
             )
           else
@@ -181,7 +182,7 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
             _chipGroup(
               options: bodyTypes,
               selected: _draft.bodyType,
-              onSelected: (v) => setState(() => _draft = _copy(_draft, bodyType: v)),
+              onSelected: (v) => setState(() => _draft = _draft.copyWith(bodyType: () => v)),
             ),
           ],
 
@@ -190,7 +191,7 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
           _chipGroup(
             options: _transmissions,
             selected: _draft.transmission,
-            onSelected: (v) => setState(() => _draft = _copy(_draft, transmission: v)),
+            onSelected: (v) => setState(() => _draft = _draft.copyWith(transmission: () => v)),
           ),
 
           const SizedBox(height: AppDimensions.paddingM),
@@ -198,7 +199,7 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
           _chipGroup(
             options: _fuelTypes,
             selected: _draft.fuelType,
-            onSelected: (v) => setState(() => _draft = _copy(_draft, fuelType: v)),
+            onSelected: (v) => setState(() => _draft = _draft.copyWith(fuelType: () => v)),
           ),
 
           const SizedBox(height: AppDimensions.paddingL),
@@ -209,37 +210,16 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
                 ref.read(vehicleFiltersProvider.notifier).apply(_draft);
                 Navigator.of(context).pop();
               },
-              child: Text('Apply filters', style: AppTextStyles.button.copyWith(color: p.onAccent)),
+              child: Text(
+                matchCount == 1 ? 'Show 1 car' : 'Show $matchCount cars',
+                style: AppTextStyles.button.copyWith(color: p.onAccent),
+              ),
             ),
           ),
         ],
       ),
     );
   }
-
-  // Nulling a field through `copyWith` needs a way to tell "leave unchanged"
-  // apart from "clear it" — since every call site here passes every field it
-  // cares about explicitly (including model=null on make-change above), a
-  // plain constructor call is simpler and avoids a sentinel-value copyWith.
-  VehicleFilters _copy(
-    VehicleFilters base, {
-    String? make,
-    String? model,
-    double? minPrice,
-    double? maxPrice,
-    String? bodyType,
-    String? transmission,
-    String? fuelType,
-  }) =>
-      VehicleFilters(
-        make: make ?? base.make,
-        model: model ?? base.model,
-        minPrice: minPrice ?? base.minPrice,
-        maxPrice: maxPrice ?? base.maxPrice,
-        bodyType: bodyType ?? base.bodyType,
-        transmission: transmission ?? base.transmission,
-        fuelType: fuelType ?? base.fuelType,
-      );
 
   String _priceLabel(double v) => v >= 1000000
       ? '${(v / 1000000).toStringAsFixed(1)}M'

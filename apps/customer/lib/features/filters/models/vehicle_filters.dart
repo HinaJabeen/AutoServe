@@ -35,6 +35,29 @@ class VehicleFilters {
   final String? dealerId;
   final String? dealerName;
 
+  /// Each argument is a thunk so a field can be cleared: `copyWith(model: () => null)`.
+  /// Omitted fields — including the dealer filter — are kept.
+  VehicleFilters copyWith({
+    String? Function()? make,
+    String? Function()? model,
+    double? Function()? minPrice,
+    double? Function()? maxPrice,
+    String? Function()? bodyType,
+    String? Function()? transmission,
+    String? Function()? fuelType,
+  }) =>
+      VehicleFilters(
+        make: make != null ? make() : this.make,
+        model: model != null ? model() : this.model,
+        minPrice: minPrice != null ? minPrice() : this.minPrice,
+        maxPrice: maxPrice != null ? maxPrice() : this.maxPrice,
+        bodyType: bodyType != null ? bodyType() : this.bodyType,
+        transmission: transmission != null ? transmission() : this.transmission,
+        fuelType: fuelType != null ? fuelType() : this.fuelType,
+        dealerId: dealerId,
+        dealerName: dealerName,
+      );
+
   bool get isActive =>
       make != null ||
       model != null ||

@@ -12,9 +12,15 @@ class CsvRowError {
 }
 
 class CsvImportResult {
-  const CsvImportResult({required this.validCars, required this.errors});
+  const CsvImportResult({
+    required this.validCars,
+    required this.errors,
+    this.ignoredColumns = const [],
+  });
   final List<CarModel> validCars;
   final List<CsvRowError> errors;
+  /// Header names that matched no known column — their data is NOT imported.
+  final List<String> ignoredColumns;
   bool get hasErrors => errors.isNotEmpty;
 }
 
@@ -27,6 +33,22 @@ class InventoryCsvService {
   // Matches the import dialog's "Required columns" text; every other
   // column is optional and may be left out of the file entirely.
   static const _requiredHeaders = ['make', 'model', 'year', 'price', 'status'];
+
+  static const _knownHeaders = {..._headers, 'body_type'};
+
+  // Common spreadsheet spellings (after normalizeHeader) → our column.
+  static const _headerAliases = {
+    'brand': 'make', 'manufacturer': 'make',
+    'model_year': 'year',
+    'asking_price': 'price', 'sale_price': 'price', 'price_pkr': 'price',
+    'km': 'mileage', 'kms': 'mileage', 'km_driven': 'mileage', 'mileage_km': 'mileage',
+    'odometer': 'mileage',
+    'colour': 'color', 'exterior_color': 'color', 'exterior_colour': 'color',
+    'gear': 'transmission', 'gearbox': 'transmission',
+    'fuel': 'fuel_type', 'fueltype': 'fuel_type',
+    'body': 'body_type', 'bodytype': 'body_type', 'body_style': 'body_type',
+    'cost_price': 'purchase_price',
+  };
 
   // Accepted spellings (already trimmed + lowercased) → the exact value the
   // LIVE `cars` check constraints allow. Note the live condition constraint
@@ -109,7 +131,12 @@ class InventoryCsvService {
     final rows = const CsvToListConverter(eol: '\n').convert(csvText, shouldParseNumbers: false);
     if (rows.isEmpty) return const CsvImportResult(validCars: [], errors: []);
 
-    final header = rows.first.map(normalizeHeader).toList();
+    final rawHeader = rows.first.map(normalizeHeader).toList();
+    final header = [for (final h in rawHeader) _headerAliases[h] ?? h];
+    final ignored = [
+      for (final h in rawHeader)
+        if (h.isNotEmpty && !_knownHeaders.contains(_headerAliases[h] ?? h)) h,
+    ];
     final colIndex = {for (var i = 0; i < header.length; i++) header[i]: i};
 
     final missing = _requiredHeaders.where((h) => !colIndex.containsKey(h));
@@ -183,6 +210,6 @@ class InventoryCsvService {
       }
     }
 
-    return CsvImportResult(validCars: cars, errors: errors);
+    return CsvImportResult(validCars: cars, errors: errors, ignoredColumns: ignored);
   }
 }

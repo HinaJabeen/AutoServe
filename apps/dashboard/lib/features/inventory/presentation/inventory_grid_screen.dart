@@ -457,21 +457,43 @@ class _VehicleCard extends ConsumerWidget {
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: statusColor.withValues(alpha: 0.14),
-                        borderRadius:
-                            BorderRadius.circular(AppDimensions.radiusFull),
-                        border: Border.all(color: statusColor.withValues(alpha: 0.4)),
-                      ),
-                      child: Text(
-                        car.status[0].toUpperCase() + car.status.substring(1),
-                        style: AppTextStyles.caption.copyWith(
-                            color: statusColor,
-                            fontSize: 10,
-                            fontWeight: FontWeight.w600),
+                    // Tap the badge to change status in place.
+                    PopupMenuButton<String>(
+                      tooltip: 'Change status',
+                      initialValue: car.status,
+                      color: p.card,
+                      onSelected: (s) => _changeStatus(context, ref, s),
+                      itemBuilder: (_) => [
+                        for (final s in _quickStatuses)
+                          PopupMenuItem(
+                            value: s,
+                            child: Row(children: [
+                              Icon(Icons.circle, size: 10, color: _statusColor(p, s)),
+                              const SizedBox(width: 8),
+                              Text(_label(s),
+                                  style: AppTextStyles.body
+                                      .copyWith(color: p.textPrimary, fontSize: 13)),
+                            ]),
+                          ),
+                      ],
+                      child: Container(
+                        padding: const EdgeInsets.fromLTRB(8, 3, 4, 3),
+                        decoration: BoxDecoration(
+                          color: statusColor.withValues(alpha: 0.14),
+                          borderRadius:
+                              BorderRadius.circular(AppDimensions.radiusFull),
+                          border: Border.all(color: statusColor.withValues(alpha: 0.4)),
+                        ),
+                        child: Row(mainAxisSize: MainAxisSize.min, children: [
+                          Text(
+                            _label(car.status),
+                            style: AppTextStyles.caption.copyWith(
+                                color: statusColor,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600),
+                          ),
+                          Icon(Icons.arrow_drop_down_rounded, size: 16, color: statusColor),
+                        ]),
                       ),
                     ),
                     const Spacer(),
@@ -515,6 +537,25 @@ class _VehicleCard extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  static const _quickStatuses = ['available', 'reserved', 'sold'];
+
+  static String _label(String s) =>
+      s.isEmpty ? s : s[0].toUpperCase() + s.substring(1);
+
+  Future<void> _changeStatus(BuildContext context, WidgetRef ref, String status) async {
+    if (status == car.status) return;
+    final messenger = ScaffoldMessenger.of(context);
+    final errorColor = context.palette.error;
+    try {
+      await ref.read(inventoryListProvider.notifier).setStatus(car, status);
+      messenger.showSnackBar(SnackBar(
+          content: Text('${car.displayTitle} marked ${_label(status).toLowerCase()}')));
+    } catch (e) {
+      messenger.showSnackBar(SnackBar(
+          content: Text('$e'), backgroundColor: errorColor));
+    }
   }
 
   Future<void> _handleDelete(BuildContext context, WidgetRef ref) async {

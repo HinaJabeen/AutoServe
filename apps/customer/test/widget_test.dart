@@ -339,6 +339,23 @@ void main() {
     });
   });
 
+  group('VehicleFilters.copyWith', () {
+    test('can clear a field, and keeps the dealer filter', () {
+      const base = VehicleFilters(
+          make: 'Toyota', model: 'Corolla', fuelType: 'petrol',
+          dealerId: 'd1', dealerName: 'Emerald Motors');
+      final cleared = base.copyWith(fuelType: () => null);
+      expect(cleared.fuelType, isNull);
+      expect(cleared.make, 'Toyota');
+      expect(cleared.dealerId, 'd1');
+      expect(cleared.dealerName, 'Emerald Motors');
+
+      final newMake = base.copyWith(make: () => 'Honda', model: () => null);
+      expect(newMake.make, 'Honda');
+      expect(newMake.model, isNull);
+    });
+  });
+
   group('VehicleDetailScreen', () {
     final dealer = DealershipModel(
       id: 'd1', name: 'Emerald Motors', ownerName: 'Owner', email: 'e@x.co',
@@ -362,12 +379,34 @@ void main() {
       await pumpDetail(tester, () async => VehicleDetail(car: _car(), dealer: dealer));
 
       expect(find.text('2022 Toyota Corolla').hitTestable(), findsOneWidget);
+      // A car with no spec data still gets the headline tiles, not a gap.
+      expect(find.text('Mileage'), findsOneWidget);
+      expect(find.text('Not specified'), findsNWidgets(5));
+      await tester.ensureVisible(find.text('Emerald Motors'));
+      await tester.pumpAndSettle();
       expect(find.text('Emerald Motors').hitTestable(), findsOneWidget);
       expect(find.text('Send Inquiry'), findsOneWidget);
       expect(find.text('Book Test Drive'), findsOneWidget);
       // The bar should hug its buttons, not stretch over the screen.
       final bar = tester.getRect(find.byType(OutlinedButton));
       expect(bar.top, greaterThan(600));
+    });
+
+    testWidgets('dealer card shows hours and a pre-filled WhatsApp button', (tester) async {
+      final open = DealershipModel(
+        id: 'd1', name: 'Emerald Motors', ownerName: 'Owner', email: 'e@x.co',
+        phone: '0300 1234567', city: 'Lahore', status: 'approved',
+        createdAt: DateTime(2026), businessHours: 'Mon–Sat 10am–8pm',
+      );
+      await pumpDetail(tester, () async => VehicleDetail(car: _car(), dealer: open));
+
+      expect(find.text('Mon–Sat 10am–8pm'), findsOneWidget);
+      expect(find.text('Contact Dealer via WhatsApp'), findsOneWidget);
+    });
+
+    testWidgets('no WhatsApp button when the dealer phone is unusable', (tester) async {
+      await pumpDetail(tester, () async => VehicleDetail(car: _car(), dealer: dealer));
+      expect(find.text('Contact Dealer via WhatsApp'), findsNothing);
     });
 
     testWidgets('a failed fetch shows the error and a retry', (tester) async {

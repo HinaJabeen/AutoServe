@@ -32,6 +32,7 @@ class AuthState {
     this.displayName,
     this.errorMessage,
     this.sessionExpired = false,
+    this.isSuperAdmin = false,
   });
 
   final AuthStatus status;
@@ -41,14 +42,17 @@ class AuthState {
   final String? displayName;
   final String? errorMessage;
   final bool sessionExpired; // triggers "Session expired" snackbar in router
+  /// Has an `admin_users` row. Independent of [role]: a dealer owner can
+  /// also be a platform admin and reach /admin from the dealer dashboard.
+  final bool isSuperAdmin;
 
   bool get isAuthenticated => status == AuthStatus.authenticated;
 
   String get homeRoute {
     switch (role) {
-      case AppRole.admin:       return '/admin/overview';
+      case AppRole.admin:       return '/admin';
       case AppRole.dealerOwner:
-      case AppRole.staff:       return '/home';
+      case AppRole.staff:       return '/overview';
       case AppRole.none:        return '/login';
     }
   }
@@ -56,7 +60,7 @@ class AuthState {
   AuthState copyWith({
     AuthStatus? status, AppRole? role, String? userId,
     String? dealershipId, String? displayName,
-    String? errorMessage, bool? sessionExpired,
+    String? errorMessage, bool? sessionExpired, bool? isSuperAdmin,
   }) => AuthState(
     status: status ?? this.status,
     role: role ?? this.role,
@@ -65,6 +69,7 @@ class AuthState {
     displayName: displayName ?? this.displayName,
     errorMessage: errorMessage,
     sessionExpired: sessionExpired ?? this.sessionExpired,
+    isSuperAdmin: isSuperAdmin ?? this.isSuperAdmin,
   );
 }
 
@@ -165,6 +170,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
   Future<void> _resolveRole(User u) async {
     if (kDebugMode) print('╔ AUTH user_id=${u.id} email=${u.email}');
     try {
+      final admin = await _findAdminRow(u.id);
+
       // 1. dealer_staff (primary)
       final staff = await _c.from('dealer_staff').select()
           .eq('user_id', u.id).maybeSingle();
@@ -182,7 +189,11 @@ class AuthNotifier extends StateNotifier<AuthState> {
           return;
         }
 
-        final role = sRole == 'owner' ? AppRole.dealerOwner : AppRole.staff;
+        // Any spelling: 'owner', 'dealer_owner', 'Dealer Owner'. The dealers
+        // update RLS policy uses the same rule (20261014160000 migration).
+        final role = sRole.toLowerCase().contains('owner')
+            ? AppRole.dealerOwner
+            : AppRole.staff;
 
         // First-login forced password change
         if (needsPwChange) {
@@ -190,6 +201,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
             status: AuthStatus.requiresPasswordChange,
             role: role, userId: u.id,
             dealershipId: dealer, displayName: name,
+            isSuperAdmin: admin != null,
           );
           return;
         }
@@ -197,57 +209,26 @@ class AuthNotifier extends StateNotifier<AuthState> {
         state = AuthState(
           status: AuthStatus.authenticated, role: role,
           userId: u.id, dealershipId: dealer, displayName: name,
+          isSuperAdmin: admin != null,
         );
         if (kDebugMode) print('✅ dealer_staff role=$sRole');
         return;
       }
 
-      // 2. users fallback
-      final uRow = await _c.from('users').select()
-          .eq('id', u.id).maybeSingle();
-      if (kDebugMode) print('║ users=$uRow');
-
-      if (uRow != null) {
-        final rawRole = uRow['role'] as String?;
-        final active  = (uRow['is_active'] as bool?) ??
-            ((uRow['status'] as String?) == 'active');
-        final dealer  = uRow['dealership_id'] as String?;
-        final name    = (uRow['full_name'] ?? uRow['name']) as String?;
-        final needsPwChange = (uRow['requires_password_change'] as bool?) ?? false;
-
-        const ok = {'admin', 'dealer', 'staff'};
-        if (rawRole == null || !ok.contains(rawRole)) {
-          await _deny('Access denied. Dashboard is for dealership staff only.');
-          return;
-        }
-        if (!active) {
-          await _deny(rawRole == 'dealer'
-              ? 'Dealership suspended. Contact AutoServe support.'
-              : 'Account deactivated. Contact your admin.');
-          return;
-        }
-
-        final role = _map(rawRole);
-        if (needsPwChange) {
-          state = AuthState(
-            status: AuthStatus.requiresPasswordChange,
-            role: role, userId: u.id,
-            dealershipId: dealer, displayName: name,
-          );
-          return;
-        }
-
+      // 2. Platform super admin with no dealership.
+      if (admin != null) {
         state = AuthState(
-          status: AuthStatus.authenticated, role: role,
-          userId: u.id, dealershipId: dealer, displayName: name,
+          status: AuthStatus.authenticated, role: AppRole.admin,
+          userId: u.id, displayName: admin['full_name'] as String?,
+          isSuperAdmin: true,
         );
-        if (kDebugMode) print('✅ users role=$rawRole');
+        if (kDebugMode) print('✅ admin_users role=admin');
         return;
       }
 
       // 3. Not found
       if (kDebugMode) {
-        print('❌ ${u.id} not in dealer_staff or users');
+        print('❌ ${u.id} not in dealer_staff or admin_users');
         print("  INSERT INTO dealer_staff(dealer_id,user_id,full_name,role,status)");
         print("  VALUES('DEALER-UUID','${u.id}','Name','owner','active');");
       }
@@ -261,11 +242,19 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
-  AppRole _map(String r) {
-    switch (r) {
-      case 'admin':  return AppRole.admin;
-      case 'dealer': return AppRole.dealerOwner;
-      default:       return AppRole.staff;
+  /// The live `admin_users` has both `id` and `user_id` columns (no `role`);
+  /// which one links to auth.users isn't knowable from the client, so match
+  /// either. Any error (e.g. no select privilege) means "not an admin" — it
+  /// must never block a dealer from signing in.
+  Future<Map<String, dynamic>?> _findAdminRow(String uid) async {
+    try {
+      final rows = await _c.from('admin_users').select('full_name')
+          .or('user_id.eq.$uid,id.eq.$uid').limit(1);
+      if (kDebugMode) print('║ admin_users=$rows');
+      return rows.isEmpty ? null : Map<String, dynamic>.from(rows.first);
+    } catch (e) {
+      if (kDebugMode) print('║ admin_users lookup failed: $e');
+      return null;
     }
   }
 

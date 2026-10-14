@@ -8,24 +8,29 @@ class LoadingShimmer extends StatelessWidget {
   final double height;
   final double? width;
   final double borderRadius;
+  final Color? baseColor;
+  final Color? highlightColor;
 
   const LoadingShimmer({
     super.key,
     this.height = 200,
     this.width,
     this.borderRadius = AppDimensions.radiusM,
+    this.baseColor,
+    this.highlightColor,
   });
 
   @override
   Widget build(BuildContext context) {
+    final base = baseColor ?? AppColors.divider;
     return Shimmer.fromColors(
-      baseColor: AppColors.divider,
-      highlightColor: AppColors.background,
+      baseColor: base,
+      highlightColor: highlightColor ?? AppColors.background,
       child: Container(
         height: height,
         width: width,
         decoration: BoxDecoration(
-          color: AppColors.divider,
+          color: base,
           borderRadius: BorderRadius.circular(borderRadius),
         ),
       ),

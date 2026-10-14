@@ -9,6 +9,7 @@ import 'package:shared/shared.dart';
 
 import '../providers/overview_provider.dart' hide dealerLeadsStreamProvider;
 import '../providers/lead_provider.dart';
+import 'widgets/lead_detail_dialog.dart';
 import '../../theme/app_palette.dart';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -558,144 +559,12 @@ class _LeadCard extends StatelessWidget {
       child: GestureDetector(
         onTap: () => showDialog(
           context: context,
-          builder: (_) => _LeadDetailDialog(lead: lead, vehicleTitle: vehicleTitle, p: p),
+          builder: (_) => LeadDetailDialog(lead: lead, vehicleTitle: vehicleTitle),
         ),
         child: card,
       ),
     );
   }
-}
-
-// ─── Lead detail dialog ───────────────────────────────────────────────────────
-
-class _LeadDetailDialog extends ConsumerWidget {
-  const _LeadDetailDialog({
-    required this.lead, required this.vehicleTitle, required this.p});
-  final LeadModel lead;
-  final String vehicleTitle;
-  final AppPalette p;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final mutation   = ref.watch(leadNotifierProvider);
-    final isUpdating = mutation.isLoading;
-
-    return Dialog(
-      backgroundColor: Colors.transparent,
-      child: Container(
-        width: 440,
-        padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          color: p.card,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: p.border),
-          boxShadow: [
-            BoxShadow(color: p.shadowColor.withValues(alpha: 0.35),
-                blurRadius: 40, offset: const Offset(0, 16)),
-          ],
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(children: [
-              Expanded(
-                child: Text(lead.consumerName,
-                    style: AppTextStyles.heading2.copyWith(
-                        color: p.textPrimary, fontSize: 18)),
-              ),
-              IconButton(
-                icon: Icon(Icons.close_rounded, color: p.textMuted, size: 20),
-                onPressed: () => Navigator.of(context).pop(),
-              ),
-            ]),
-            const SizedBox(height: 8),
-            _dRow(p, Icons.directions_car_outlined, vehicleTitle),
-            if (lead.consumerPhone != null)
-              _dRow(p, Icons.phone_outlined, lead.consumerPhone!),
-            if (lead.consumerEmail != null)
-              _dRow(p, Icons.mail_outline_rounded, lead.consumerEmail!),
-            _dRow(p,
-              lead.type == 'test_drive'
-                  ? Icons.event_available_outlined
-                  : Icons.chat_bubble_outline_rounded,
-              lead.type == 'test_drive' ? 'Test drive request' : 'Inquiry'),
-            _dRow(p, Icons.schedule_rounded, _timeAgo(lead.createdAt)),
-            if (lead.notes != null && lead.notes!.trim().isNotEmpty) ...[
-              const SizedBox(height: 12),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: p.surface,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(lead.notes!,
-                    style: AppTextStyles.body.copyWith(
-                        color: p.textSecondary, fontSize: 12.5)),
-              ),
-            ],
-            const SizedBox(height: 16),
-            Text('Update status',
-                style: AppTextStyles.caption.copyWith(
-                    color: p.textMuted, fontSize: 11,
-                    fontWeight: FontWeight.w700, letterSpacing: 0.4)),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8, runSpacing: 8,
-              children: _allStatusLabels.entries.map((e) {
-                final isCurrent = lead.status == e.key;
-                return Material(
-                  color: Colors.transparent,
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(20),
-                    onTap: isCurrent || isUpdating ? null : () async {
-                      final ok = await ref
-                          .read(leadNotifierProvider.notifier)
-                          .updateStatus(lead.id, e.key);
-                      if (ok && context.mounted) Navigator.of(context).pop();
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 7),
-                      decoration: BoxDecoration(
-                        color: isCurrent
-                            ? p.accent.withValues(alpha: 0.16)
-                            : p.surface,
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                            color: isCurrent
-                                ? p.accent.withValues(alpha: 0.5)
-                                : p.border),
-                      ),
-                      child: Text(e.value,
-                          style: AppTextStyles.caption.copyWith(
-                            color: isCurrent ? p.accent : p.textSecondary,
-                            fontSize: 12,
-                            fontWeight: isCurrent
-                                ? FontWeight.w700 : FontWeight.w400,
-                          )),
-                    ),
-                  ),
-                );
-              }).toList(),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _dRow(AppPalette p, IconData icon, String text) => Padding(
-    padding: const EdgeInsets.only(top: 7),
-    child: Row(children: [
-      Icon(icon, size: 14, color: p.textMuted),
-      const SizedBox(width: 8),
-      Expanded(child: Text(text,
-          style: AppTextStyles.body.copyWith(
-              color: p.textSecondary, fontSize: 12.5))),
-    ]),
-  );
 }
 
 // ─── Empty / error states ─────────────────────────────────────────────────────

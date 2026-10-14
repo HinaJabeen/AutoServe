@@ -65,6 +65,7 @@ class _VehicleFormV2State extends ConsumerState<VehicleFormV2> {
   late final _retailPriceCtrl = TextEditingController(text: _thousands(widget.carToEdit?.retailPrice?.toInt()));
   late final _featuresCtrl = TextEditingController(text: widget.carToEdit?.features.join(', ') ?? '');
   late final _notesCtrl = TextEditingController(text: widget.carToEdit?.reconditioningNotes ?? '');
+  late final _descriptionCtrl = TextEditingController(text: widget.carToEdit?.description ?? '');
 
   String? _status;
   String? _condition;
@@ -98,7 +99,7 @@ class _VehicleFormV2State extends ConsumerState<VehicleFormV2> {
 
   @override
   void dispose() {
-    for (final c in [_vinCtrl, _makeCtrl, _modelCtrl, _yearCtrl, _colorCtrl, _mileageCtrl, _priceCtrl, _purchasePriceCtrl, _retailPriceCtrl, _featuresCtrl, _notesCtrl]) {
+    for (final c in [_vinCtrl, _makeCtrl, _modelCtrl, _yearCtrl, _colorCtrl, _mileageCtrl, _priceCtrl, _purchasePriceCtrl, _retailPriceCtrl, _featuresCtrl, _notesCtrl, _descriptionCtrl]) {
       c.dispose();
     }
     super.dispose();
@@ -176,6 +177,11 @@ class _VehicleFormV2State extends ConsumerState<VehicleFormV2> {
       isPublic: _isPublic,
       features: features,
       reconditioningNotes: _notesCtrl.text.trim().isEmpty ? null : _notesCtrl.text.trim(),
+      // Null fields are dropped from the payload, so clearing an existing
+      // description has to send '' to actually overwrite it.
+      description: _descriptionCtrl.text.trim().isNotEmpty
+          ? _descriptionCtrl.text.trim()
+          : (widget.carToEdit?.description != null ? '' : null),
     );
 
     final result = _isEditMode
@@ -377,7 +383,9 @@ class _VehicleFormV2State extends ConsumerState<VehicleFormV2> {
                       const SizedBox(height: AppDimensions.paddingM),
                       _textField(controller: _featuresCtrl, label: 'Features (comma-separated)'),
                       const SizedBox(height: AppDimensions.paddingM),
-                      _textField(controller: _notesCtrl, label: 'Reconditioning Notes', maxLines: 3),
+                      _textField(controller: _descriptionCtrl, label: 'Description (shown to customers)', maxLines: 4, maxLength: 2000),
+                      const SizedBox(height: AppDimensions.paddingM),
+                      _textField(controller: _notesCtrl, label: 'Reconditioning Notes (internal)', maxLines: 3),
                       const SizedBox(height: AppDimensions.paddingM),
                       SwitchListTile(
                         contentPadding: EdgeInsets.zero,

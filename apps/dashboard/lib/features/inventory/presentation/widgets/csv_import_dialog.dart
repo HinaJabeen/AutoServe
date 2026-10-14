@@ -101,6 +101,15 @@ class _CsvImportDialogState extends ConsumerState<CsvImportDialog> {
             if (result != null) ...[
               const SizedBox(height: AppDimensions.paddingM),
               Text('${result.validCars.length} valid rows, ${result.errors.length} errors', style: AppTextStyles.body.copyWith(color: p.textPrimary)),
+              if (result.ignoredColumns.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: 6),
+                  child: Text(
+                    'Not imported — unrecognised column(s): ${result.ignoredColumns.join(', ')}. '
+                    'Rename them to match: mileage, color, transmission, fuel_type, condition, body_type.',
+                    style: AppTextStyles.caption.copyWith(color: p.warning),
+                  ),
+                ),
               if (result.errors.isNotEmpty)
                 Flexible(
                   child: ListView(

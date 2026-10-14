@@ -11,6 +11,8 @@ import '../../features/inventory/presentation/inventory_grid_screen.dart';
 import '../../features/presentation/lead_inbox_screen.dart';
 import '../../features/presentation/appointment_scheduler_screen.dart';
 import '../../features/presentation/profile_settings_screen.dart';
+import '../../features/presentation/dealership_settings_screen.dart';
+import '../../features/admin/admin_panel_screen.dart';
 import '../../features/providers/auth_provider.dart';
 
 class AppRoutes {
@@ -20,6 +22,8 @@ class AppRoutes {
   static const leads = '/leads';
   static const schedule = '/schedule';
   static const profile = '/profile';
+  static const settings = '/settings';
+  static const admin = '/admin';
 }
 
 final goRouterProvider = Provider<GoRouter>((ref) {
@@ -36,10 +40,18 @@ final goRouterProvider = Provider<GoRouter>((ref) {
     initialLocation: AppRoutes.overview,
     refreshListenable: _AuthChangeNotifier(ref),
     redirect: (context, state) {
-      final loggedIn = ref.read(authProvider).isAuthenticated;
-      final goingToLogin = state.matchedLocation == AppRoutes.login;
-      if (!loggedIn && !goingToLogin) return AppRoutes.login;
-      if (loggedIn && goingToLogin) return AppRoutes.overview;
+      final auth = ref.read(authProvider);
+      final location = state.matchedLocation;
+      if (!auth.isAuthenticated) {
+        return location == AppRoutes.login ? null : AppRoutes.login;
+      }
+      if (location == AppRoutes.login) return auth.homeRoute;
+      // /admin is reachable by anyone signed in: AdminPanelScreen renders an
+      // explicit "Access denied" for non-admins instead of a silent bounce
+      // (RLS keeps the platform data admin-only regardless).
+      if (location == AppRoutes.admin) return null;
+      // Admin-only accounts have no dealership, so dealer screens are empty.
+      if (auth.role == AppRole.admin) return AppRoutes.admin;
       return null;
     },
     routes: [
@@ -55,6 +67,10 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         path: AppRoutes.login,
         builder: (_, __) => const LoginScreen(),
       ),
+      GoRoute(
+        path: AppRoutes.admin,
+        builder: (_, __) => const AdminPanelScreen(),
+      ),
       ShellRoute(
         builder: (_, __, child) => DashboardShell(child: child),
         routes: [
@@ -63,6 +79,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(path: AppRoutes.leads, builder: (_, __) => const LeadInboxScreen()),
           GoRoute(path: AppRoutes.schedule, builder: (_, __) => const AppointmentSchedulerScreen()),
           GoRoute(path: AppRoutes.profile, builder: (_, __) => const ProfileSettingsScreen()),
+          GoRoute(path: AppRoutes.settings, builder: (_, __) => const DealershipSettingsScreen()),
         ],
       ),
     ],

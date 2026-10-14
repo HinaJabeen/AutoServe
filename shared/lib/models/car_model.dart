@@ -31,6 +31,7 @@ class CarModel {
     this.isPublic = true,
     this.features = const [],
     this.reconditioningNotes,
+    this.description,
     this.photoUrls = const [],
   });
 
@@ -57,6 +58,9 @@ class CarModel {
   final bool isPublic;
   final List<String> features;
   final String? reconditioningNotes;
+
+  /// Public listing text shown to customers (unlike [reconditioningNotes]).
+  final String? description;
 
   /// Not a DB column — populated separately from `car_photos` join.
   final List<String> photoUrls;
@@ -167,6 +171,7 @@ class CarModel {
       isPublic:           (json['is_public'] as bool?) ?? true,
       features:           features,
       reconditioningNotes: strOrNull('reconditioning_notes'),
+      description:        strOrNull('description'),
       photoUrls:          photoUrls,
     );
   }
@@ -188,6 +193,7 @@ class CarModel {
       'is_public':            isPublic,
       'features':             features,
       'reconditioning_notes': reconditioningNotes,
+      'description':          description,
     }..removeWhere((_, v) => v == null);
   }
 
@@ -196,6 +202,7 @@ class CarModel {
     int? mileage, String? color, String? transmission, String? fuelType,
     String? condition, double? purchasePrice, double? retailPrice,
     bool? isPublic, List<String>? features, String? reconditioningNotes,
+    String? description,
     List<String>? photoUrls,
   }) {
     return CarModel(
@@ -216,6 +223,7 @@ class CarModel {
       isPublic:           isPublic           ?? this.isPublic,
       features:           features           ?? this.features,
       reconditioningNotes: reconditioningNotes ?? this.reconditioningNotes,
+      description:        description        ?? this.description,
       photoUrls:          photoUrls          ?? this.photoUrls,
     );
   }
