@@ -33,6 +33,13 @@ class AppPalette extends ThemeExtension<AppPalette> {
   final Color glassFill;
   final Color glassBorder;
 
+  /// Gold for ratings / inspection badges. Optional so existing palettes
+  /// keep compiling; only the customer forest palettes set it deliberately.
+  final Color highlight;
+
+  /// Warm neutral accent (caramel / bronze) for small decorative touches.
+  final Color warmAccent;
+
   const AppPalette({
     required this.background,
     required this.surface,
@@ -59,6 +66,8 @@ class AppPalette extends ThemeExtension<AppPalette> {
     required this.statusSold,
     required this.glassFill,
     required this.glassBorder,
+    this.highlight = const Color(0xFFFFBA00),
+    this.warmAccent = const Color(0xFFBB8A52),
   });
 
   // Premium "Control Room" dark mode — Deep Obsidian + Mercedes Ambient Blue.
@@ -192,6 +201,72 @@ class AppPalette extends ThemeExtension<AppPalette> {
     glassBorder: Color(0xFFDFE4E1),
   );
 
+  // ── apps/customer — luxury earthy "forest" ─────────────────────────────────
+  // Deep pine #0C3B2E brand, sage #6D9773 action fills, caramel #BB8A52 warm
+  // accent, gold #FFBA00 for ratings, porcelain #F7F8F5 page. `accent` is the
+  // sage fill (buttons, selected chips); `accentSecondary` is the shade used
+  // for brand-coloured TEXT and icons — deep pine on light, pale sage on dark
+  // — because sage text on white is too low-contrast to read.
+  static const forestLight = AppPalette(
+    background: Color(0xFFF7F8F5),
+    surface: Color(0xFFF0F2EB),
+    surfaceElevated: Color(0xFFFFFFFF),
+    card: Color(0xFFFFFFFF),
+    border: Color(0xFFE1E5DA),
+    borderSubtle: Color(0xFFECEEE6),
+    accent: Color(0xFF6D9773),
+    accentSecondary: Color(0xFF0C3B2E),
+    accentGlow: Color(0x336D9773),
+    onAccent: Color(0xFFFFFFFF),
+    badgeBackground: Color(0xFFE6EEE4),
+    badgeText: Color(0xFF0C3B2E),
+    textPrimary: Color(0xFF13261F),
+    textSecondary: Color(0xFF4B5C53),
+    textTertiary: Color(0xFF6C7C73),
+    textMuted: Color(0xFF8F9C94),
+    success: Color(0xFF2F7D4A),
+    warning: Color(0xFFB7791F),
+    error: Color(0xFFB3261E),
+    shadowColor: Color(0xFF0C3B2E),
+    statusAvailable: Color(0xFF2F7D4A),
+    statusReserved: Color(0xFFBB8A52),
+    statusSold: Color(0xFF6C7C73),
+    glassFill: Color(0xA6FFFFFF), // white @ 65%
+    glassBorder: Color(0x4DFFFFFF), // white @ 30%
+    highlight: Color(0xFFFFBA00),
+    warmAccent: Color(0xFFBB8A52),
+  );
+
+  static const forestDark = AppPalette(
+    background: Color(0xFF08221B),
+    surface: Color(0xFF0C2D24),
+    surfaceElevated: Color(0xFF113A2F),
+    card: Color(0xFF0F3329),
+    border: Color(0xFF1E4A3D),
+    borderSubtle: Color(0xFF173F33),
+    accent: Color(0xFF6D9773),
+    accentSecondary: Color(0xFFA9CBAE),
+    accentGlow: Color(0x406D9773),
+    onAccent: Color(0xFFFFFFFF),
+    badgeBackground: Color(0xFF14463A),
+    badgeText: Color(0xFFA9CBAE),
+    textPrimary: Color(0xFFF1F4EE),
+    textSecondary: Color(0xFFC3CDC6),
+    textTertiary: Color(0xFF94A59B),
+    textMuted: Color(0xFF73877C),
+    success: Color(0xFF6FCF8E),
+    warning: Color(0xFFE3B464),
+    error: Color(0xFFFF7A6E),
+    shadowColor: Color(0xFF000000),
+    statusAvailable: Color(0xFF6FCF8E),
+    statusReserved: Color(0xFFD7A86E),
+    statusSold: Color(0xFF94A59B),
+    glassFill: Color(0x800C3B2E), // pine @ 50%
+    glassBorder: Color(0x4DFFFFFF), // white @ 30%
+    highlight: Color(0xFFFFBA00),
+    warmAccent: Color(0xFFD7A86E),
+  );
+
   @override
   ThemeExtension<AppPalette> copyWith({
     Color? background,
@@ -219,6 +294,8 @@ class AppPalette extends ThemeExtension<AppPalette> {
     Color? statusSold,
     Color? glassFill,
     Color? glassBorder,
+    Color? highlight,
+    Color? warmAccent,
   }) {
     return AppPalette(
       background: background ?? this.background,
@@ -246,6 +323,8 @@ class AppPalette extends ThemeExtension<AppPalette> {
       statusSold: statusSold ?? this.statusSold,
       glassFill: glassFill ?? this.glassFill,
       glassBorder: glassBorder ?? this.glassBorder,
+      highlight: highlight ?? this.highlight,
+      warmAccent: warmAccent ?? this.warmAccent,
     );
   }
 
@@ -278,6 +357,8 @@ class AppPalette extends ThemeExtension<AppPalette> {
       statusSold: Color.lerp(statusSold, other.statusSold, t)!,
       glassFill: Color.lerp(glassFill, other.glassFill, t)!,
       glassBorder: Color.lerp(glassBorder, other.glassBorder, t)!,
+      highlight: Color.lerp(highlight, other.highlight, t)!,
+      warmAccent: Color.lerp(warmAccent, other.warmAccent, t)!,
     );
   }
 }

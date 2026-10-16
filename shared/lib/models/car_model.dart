@@ -32,6 +32,9 @@ class CarModel {
     this.features = const [],
     this.reconditioningNotes,
     this.description,
+    this.chassisNumber,
+    this.inspectionScore,
+    this.inspectionDetails = const {},
     this.photoUrls = const [],
   });
 
@@ -61,6 +64,17 @@ class CarModel {
 
   /// Public listing text shown to customers (unlike [reconditioningNotes]).
   final String? description;
+
+  /// VIN / chassis number. Unique among active listings platform-wide.
+  final String? chassisNumber;
+
+  /// Overall inspection rating, 0.0–10.0; null = not inspected.
+  final double? inspectionScore;
+
+  /// e.g. {"engine": 9.0, "suspension": 8.5, "body": "Non-Accidental"}.
+  final Map<String, dynamic> inspectionDetails;
+
+  bool get isInspected => inspectionScore != null;
 
   /// Not a DB column — populated separately from `car_photos` join.
   final List<String> photoUrls;
@@ -172,6 +186,11 @@ class CarModel {
       features:           features,
       reconditioningNotes: strOrNull('reconditioning_notes'),
       description:        strOrNull('description'),
+      chassisNumber:      strOrNull('chassis_number'),
+      inspectionScore:    dblOrNull('inspection_score'),
+      inspectionDetails:  json['inspection_details'] is Map
+          ? Map<String, dynamic>.from(json['inspection_details'] as Map)
+          : const {},
       photoUrls:          photoUrls,
     );
   }
@@ -194,6 +213,9 @@ class CarModel {
       'features':             features,
       'reconditioning_notes': reconditioningNotes,
       'description':          description,
+      'chassis_number':       chassisNumber,
+      'inspection_score':     inspectionScore,
+      'inspection_details':   inspectionDetails.isEmpty ? null : inspectionDetails,
     }..removeWhere((_, v) => v == null);
   }
 
@@ -202,7 +224,8 @@ class CarModel {
     int? mileage, String? color, String? transmission, String? fuelType,
     String? condition, double? purchasePrice, double? retailPrice,
     bool? isPublic, List<String>? features, String? reconditioningNotes,
-    String? description,
+    String? description, String? chassisNumber, double? inspectionScore,
+    Map<String, dynamic>? inspectionDetails,
     List<String>? photoUrls,
   }) {
     return CarModel(
@@ -224,6 +247,9 @@ class CarModel {
       features:           features           ?? this.features,
       reconditioningNotes: reconditioningNotes ?? this.reconditioningNotes,
       description:        description        ?? this.description,
+      chassisNumber:      chassisNumber      ?? this.chassisNumber,
+      inspectionScore:    inspectionScore    ?? this.inspectionScore,
+      inspectionDetails:  inspectionDetails  ?? this.inspectionDetails,
       photoUrls:          photoUrls          ?? this.photoUrls,
     );
   }
