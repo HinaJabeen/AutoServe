@@ -8,6 +8,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared/shared.dart';
 
+import '../../../core/theme/app_theme.dart';
+
 import '../../../core/validators.dart';
 import '../../auth/providers/auth_providers.dart';
 import '../../saved/providers/saved_cars_providers.dart';
@@ -121,7 +123,7 @@ class _LeadInquiryBottomSheetState extends ConsumerState<LeadInquiryBottomSheet>
           child: Container(
             decoration: BoxDecoration(
               color: p.card,
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(AppDimensions.radiusL)),
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(AppRadii.sheet)),
             ),
             padding: const EdgeInsets.fromLTRB(
                 AppDimensions.paddingL, AppDimensions.paddingM, AppDimensions.paddingL, AppDimensions.paddingL),

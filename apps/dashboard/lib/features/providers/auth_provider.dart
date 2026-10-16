@@ -242,15 +242,31 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
-  /// The live `admin_users` has both `id` and `user_id` columns (no `role`);
-  /// which one links to auth.users isn't knowable from the client, so match
-  /// either. Any error (e.g. no select privilege) means "not an admin" — it
-  /// must never block a dealer from signing in.
+  /// Platform admin = an `admin_users` row whose `id` or `user_id` is this
+  /// auth user. Asked via the SECURITY DEFINER `is_platform_admin()` RPC
+  /// (20261015120000 migration) so admin_users' own RLS can't hide it; falls
+  /// back to reading the table directly where that RPC doesn't exist yet.
+  /// Any error means "not an admin" — it must never block a dealer sign-in.
   Future<Map<String, dynamic>?> _findAdminRow(String uid) async {
+    try {
+      final isAdmin = await _c.rpc('is_platform_admin');
+      if (kDebugMode) print('║ is_platform_admin=$isAdmin');
+      if (isAdmin != true) return null;
+      final rows = await _c.from('admin_users').select('full_name')
+          .or('user_id.eq.$uid,id.eq.$uid').limit(1);
+      return rows.isEmpty ? const {} : Map<String, dynamic>.from(rows.first);
+    } on PostgrestException catch (e) {
+      if (e.code != 'PGRST202' && e.code != '42883') {
+        if (kDebugMode) print('║ is_platform_admin failed: $e');
+        return null;
+      }
+    } catch (e) {
+      if (kDebugMode) print('║ is_platform_admin failed: $e');
+      return null;
+    }
     try {
       final rows = await _c.from('admin_users').select('full_name')
           .or('user_id.eq.$uid,id.eq.$uid').limit(1);
-      if (kDebugMode) print('║ admin_users=$rows');
       return rows.isEmpty ? null : Map<String, dynamic>.from(rows.first);
     } catch (e) {
       if (kDebugMode) print('║ admin_users lookup failed: $e');

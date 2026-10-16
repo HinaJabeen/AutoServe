@@ -512,9 +512,8 @@ class _VehicleCard extends ConsumerWidget {
                         try {
                           await const WindowStickerPdfService().printSticker(
                             car: car,
+                            dealer: dealershipAsync.value,
                             dealershipName: dealerName,
-                            carDetailUrl:
-                                'https://autoserve.app/cars/${car.id}',
                           );
                         } catch (e) {
                           if (context.mounted) {

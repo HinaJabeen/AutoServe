@@ -79,7 +79,7 @@ class VehicleFormNotifier extends Notifier<VehicleFormState> {
     }
   }
 
-  Future<CarModel?> updateCar(String carId, CarModel car) async {
+  Future<CarModel?> updateCar(String carId, CarModel car, {Set<String> clear = const {}}) async {
     final service = ref.read(inventoryServiceProvider);
     if (service == null) {
       state = state.copyWith(errorMessage: 'No active dealership session.');
@@ -87,7 +87,7 @@ class VehicleFormNotifier extends Notifier<VehicleFormState> {
     }
     state = state.copyWith(isSubmitting: true, errorMessage: null);
     try {
-      final updated = await service.updateCar(carId, car);
+      final updated = await service.updateCar(carId, car, clear: clear);
       state = state.copyWith(isSubmitting: false);
       ref.read(inventoryListProvider.notifier).patchCar(updated);
       return updated;

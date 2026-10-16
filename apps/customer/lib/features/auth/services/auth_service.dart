@@ -58,6 +58,22 @@ class AuthService {
     if (row == null) return null;
     return CustomerProfile.fromJson(row, email: user.email ?? '');
   }
+
+  /// True when [userId] applied for a dealership through this app
+  /// (`dealers.applicant_user_id`). Any failure — including the verification
+  /// migration not being applied yet — counts as false.
+  Future<bool> isSelfRegisteredDealer(String userId) async {
+    try {
+      final row = await _client
+          .from('dealers')
+          .select('id')
+          .eq('applicant_user_id', userId)
+          .maybeSingle();
+      return row != null;
+    } catch (_) {
+      return false;
+    }
+  }
 }
 
 const emailAlreadyRegisteredMessage =

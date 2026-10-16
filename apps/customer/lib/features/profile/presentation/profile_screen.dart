@@ -4,9 +4,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared/shared.dart';
 
+import '../../../core/theme/app_theme.dart';
+
 import '../../../core/theme/theme_provider.dart';
 import '../../auth/models/customer_profile.dart';
 import '../../auth/providers/auth_providers.dart';
+import '../../dealer_application/presentation/dealer_status_card.dart';
 
 const _kProfileMaxWidth = 480.0;
 
@@ -76,6 +79,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         ),
                         const SizedBox(height: AppDimensions.paddingM),
                         const _SectionCard(children: [_AppearanceRow()]),
+                        const SizedBox(height: AppDimensions.paddingM),
+                        const DealerStatusCard(),
                         const SizedBox(height: AppDimensions.paddingL),
                         AppButton(
                           label: 'Log out',
@@ -170,7 +175,7 @@ class _SectionCard extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: p.card,
-        borderRadius: BorderRadius.circular(AppDimensions.radiusL),
+        borderRadius: BorderRadius.circular(AppRadii.glass),
         border: Border.all(color: p.border),
       ),
       child: Column(

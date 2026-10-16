@@ -15,6 +15,8 @@ import '../../features/auth/presentation/login_screen.dart';
 import '../../features/auth/presentation/signup_screen.dart';
 import '../../features/auth/presentation/splash_screen.dart';
 import '../../features/auth/providers/auth_providers.dart';
+import '../../features/compare/presentation/compare_screen.dart';
+import '../../features/dealer_application/presentation/become_dealer_screen.dart';
 import '../../features/details/presentation/vehicle_detail_screen.dart';
 import '../../features/discovery/presentation/swipe_deck_screen.dart';
 import '../../features/profile/presentation/profile_screen.dart';
@@ -30,6 +32,8 @@ class AppRoutes {
   static const saved = '/saved';
   static const profile = '/profile';
   static const search = '/search';
+  static const becomeDealer = '/become-dealer';
+  static const compare = '/compare';
   static const vehicleDetail = '/vehicles/:id';
 
   /// Pre-rename path. Dashboard-printed QR codes encode
@@ -129,6 +133,14 @@ final goRouterProvider = Provider<GoRouter>((ref) {
             ),
           ]),
         ],
+      ),
+      GoRoute(
+        path: AppRoutes.compare,
+        builder: (_, _) => const CompareScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.becomeDealer,
+        builder: (_, _) => const BecomeDealerScreen(),
       ),
       GoRoute(
         path: AppRoutes.search,

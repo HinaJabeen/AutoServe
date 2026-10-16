@@ -21,15 +21,20 @@ const _conditions = ['excellent', 'good', 'fair'];
 const _fuelTypes = ['petrol', 'diesel', 'hybrid', 'electric', 'cng'];
 const _transmissions = ['manual', 'automatic'];
 
-String _titleCase(String s) => s.isEmpty ? s : s[0].toUpperCase() + s.substring(1);
+String _titleCase(String s) =>
+    s.isEmpty ? s : s[0].toUpperCase() + s.substring(1);
 
 class _ThousandsFormatter extends TextInputFormatter {
   @override
-  TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
+  TextEditingValue formatEditUpdate(
+      TextEditingValue oldValue, TextEditingValue newValue) {
     final digitsOnly = newValue.text.replaceAll(RegExp(r'[^\d]'), '');
     if (digitsOnly.isEmpty) return newValue.copyWith(text: '');
-    final formatted = digitsOnly.replaceAllMapped(RegExp(r'(\d)(?=(\d{3})+(?!\d))'), (m) => '${m[1]},');
-    return TextEditingValue(text: formatted, selection: TextSelection.collapsed(offset: formatted.length));
+    final formatted = digitsOnly.replaceAllMapped(
+        RegExp(r'(\d)(?=(\d{3})+(?!\d))'), (m) => '${m[1]},');
+    return TextEditingValue(
+        text: formatted,
+        selection: TextSelection.collapsed(offset: formatted.length));
   }
 }
 
@@ -37,7 +42,8 @@ class _ThousandsFormatter extends TextInputFormatter {
 /// validator — belt and suspenders against negative price/mileage.
 class _NonNegativeFormatter extends TextInputFormatter {
   @override
-  TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
+  TextEditingValue formatEditUpdate(
+      TextEditingValue oldValue, TextEditingValue newValue) {
     if (newValue.text.contains('-')) return oldValue;
     return newValue;
   }
@@ -54,18 +60,38 @@ class VehicleFormV2 extends ConsumerStatefulWidget {
 class _VehicleFormV2State extends ConsumerState<VehicleFormV2> {
   final _formKey = GlobalKey<FormState>();
 
-  late final _vinCtrl = TextEditingController();
-  late final _makeCtrl = TextEditingController(text: widget.carToEdit?.make ?? '');
-  late final _modelCtrl = TextEditingController(text: widget.carToEdit?.model ?? '');
-  late final _yearCtrl = TextEditingController(text: widget.carToEdit?.year.toString() ?? '');
-  late final _colorCtrl = TextEditingController(text: widget.carToEdit?.color ?? '');
-  late final _mileageCtrl = TextEditingController(text: _thousands(widget.carToEdit?.mileage));
-  late final _priceCtrl = TextEditingController(text: _thousands(widget.carToEdit?.price.toInt()));
-  late final _purchasePriceCtrl = TextEditingController(text: _thousands(widget.carToEdit?.purchasePrice?.toInt()));
-  late final _retailPriceCtrl = TextEditingController(text: _thousands(widget.carToEdit?.retailPrice?.toInt()));
-  late final _featuresCtrl = TextEditingController(text: widget.carToEdit?.features.join(', ') ?? '');
-  late final _notesCtrl = TextEditingController(text: widget.carToEdit?.reconditioningNotes ?? '');
-  late final _descriptionCtrl = TextEditingController(text: widget.carToEdit?.description ?? '');
+  late final _vinCtrl =
+      TextEditingController(text: widget.carToEdit?.chassisNumber ?? '');
+  late final _scoreCtrl = TextEditingController(
+      text: widget.carToEdit?.inspectionScore?.toStringAsFixed(1) ?? '');
+  late final _engineCtrl = TextEditingController(
+      text: _detailScore(widget.carToEdit?.inspectionDetails['engine']));
+  late final _suspensionCtrl = TextEditingController(
+      text: _detailScore(widget.carToEdit?.inspectionDetails['suspension']));
+  late String? _bodyCondition =
+      widget.carToEdit?.inspectionDetails['body']?.toString();
+  late final _makeCtrl =
+      TextEditingController(text: widget.carToEdit?.make ?? '');
+  late final _modelCtrl =
+      TextEditingController(text: widget.carToEdit?.model ?? '');
+  late final _yearCtrl =
+      TextEditingController(text: widget.carToEdit?.year.toString() ?? '');
+  late final _colorCtrl =
+      TextEditingController(text: widget.carToEdit?.color ?? '');
+  late final _mileageCtrl =
+      TextEditingController(text: _thousands(widget.carToEdit?.mileage));
+  late final _priceCtrl =
+      TextEditingController(text: _thousands(widget.carToEdit?.price.toInt()));
+  late final _purchasePriceCtrl = TextEditingController(
+      text: _thousands(widget.carToEdit?.purchasePrice?.toInt()));
+  late final _retailPriceCtrl = TextEditingController(
+      text: _thousands(widget.carToEdit?.retailPrice?.toInt()));
+  late final _featuresCtrl =
+      TextEditingController(text: widget.carToEdit?.features.join(', ') ?? '');
+  late final _notesCtrl =
+      TextEditingController(text: widget.carToEdit?.reconditioningNotes ?? '');
+  late final _descriptionCtrl =
+      TextEditingController(text: widget.carToEdit?.description ?? '');
 
   String? _status;
   String? _condition;
@@ -79,7 +105,9 @@ class _VehicleFormV2State extends ConsumerState<VehicleFormV2> {
 
   static String _thousands(int? v) {
     if (v == null) return '';
-    return v.toString().replaceAllMapped(RegExp(r'(\d)(?=(\d{3})+(?!\d))'), (m) => '${m[1]},');
+    return v
+        .toString()
+        .replaceAllMapped(RegExp(r'(\d)(?=(\d{3})+(?!\d))'), (m) => '${m[1]},');
   }
 
   static double? _parseThousands(String s) {
@@ -99,7 +127,23 @@ class _VehicleFormV2State extends ConsumerState<VehicleFormV2> {
 
   @override
   void dispose() {
-    for (final c in [_vinCtrl, _makeCtrl, _modelCtrl, _yearCtrl, _colorCtrl, _mileageCtrl, _priceCtrl, _purchasePriceCtrl, _retailPriceCtrl, _featuresCtrl, _notesCtrl, _descriptionCtrl]) {
+    for (final c in [
+      _vinCtrl,
+      _makeCtrl,
+      _modelCtrl,
+      _yearCtrl,
+      _colorCtrl,
+      _mileageCtrl,
+      _priceCtrl,
+      _purchasePriceCtrl,
+      _retailPriceCtrl,
+      _featuresCtrl,
+      _notesCtrl,
+      _descriptionCtrl,
+      _scoreCtrl,
+      _engineCtrl,
+      _suspensionCtrl
+    ]) {
       c.dispose();
     }
     super.dispose();
@@ -110,14 +154,18 @@ class _VehicleFormV2State extends ConsumerState<VehicleFormV2> {
     final notifier = ref.read(vehicleFormProvider.notifier);
     if (!notifier.isValidVin(vin)) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('VIN must be exactly 17 characters (no I, O, or Q).')),
+        const SnackBar(
+            content:
+                Text('VIN must be exactly 17 characters (no I, O, or Q).')),
       );
       return;
     }
     final decoded = await notifier.decodeVin(vin);
     if (decoded == null) {
       final err = ref.read(vehicleFormProvider).errorMessage;
-      if (err != null && mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err)));
+      if (err != null && mounted)
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(err)));
       return;
     }
     setState(() {
@@ -126,11 +174,14 @@ class _VehicleFormV2State extends ConsumerState<VehicleFormV2> {
       if (decoded.year != null) _yearCtrl.text = decoded.year.toString();
       if (decoded.transmission != null) {
         final t = decoded.transmission!.toLowerCase();
-        _transmission = t.contains('manual') ? 'manual' : (t.contains('auto') ? 'automatic' : _transmission);
+        _transmission = t.contains('manual')
+            ? 'manual'
+            : (t.contains('auto') ? 'automatic' : _transmission);
       }
       if (decoded.fuelType != null) {
         final f = decoded.fuelType!.toLowerCase();
-        _fuelType = _fuelTypes.firstWhere((e) => f.contains(e), orElse: () => _fuelType ?? '');
+        _fuelType = _fuelTypes.firstWhere((e) => f.contains(e),
+            orElse: () => _fuelType ?? '');
         if (_fuelType!.isEmpty) _fuelType = null;
       }
     });
@@ -146,7 +197,10 @@ class _VehicleFormV2State extends ConsumerState<VehicleFormV2> {
   Future<void> _handleSubmit() async {
     setState(() => _submitted = true);
     if (!_formKey.currentState!.validate()) return;
-    if (_status == null || _condition == null || _fuelType == null || _transmission == null) {
+    if (_status == null ||
+        _condition == null ||
+        _fuelType == null ||
+        _transmission == null) {
       setState(() {});
       return;
     }
@@ -155,7 +209,11 @@ class _VehicleFormV2State extends ConsumerState<VehicleFormV2> {
     notifier.clearError();
 
     final now = DateTime.now();
-    final features = _featuresCtrl.text.split(',').map((s) => s.trim()).where((s) => s.isNotEmpty).toList();
+    final features = _featuresCtrl.text
+        .split(',')
+        .map((s) => s.trim())
+        .where((s) => s.isNotEmpty)
+        .toList();
 
     final car = CarModel(
       id: widget.carToEdit?.id ?? '',
@@ -176,16 +234,40 @@ class _VehicleFormV2State extends ConsumerState<VehicleFormV2> {
       retailPrice: _parseThousands(_retailPriceCtrl.text),
       isPublic: _isPublic,
       features: features,
-      reconditioningNotes: _notesCtrl.text.trim().isEmpty ? null : _notesCtrl.text.trim(),
+      reconditioningNotes:
+          _notesCtrl.text.trim().isEmpty ? null : _notesCtrl.text.trim(),
       // Null fields are dropped from the payload, so clearing an existing
       // description has to send '' to actually overwrite it.
       description: _descriptionCtrl.text.trim().isNotEmpty
           ? _descriptionCtrl.text.trim()
           : (widget.carToEdit?.description != null ? '' : null),
+      chassisNumber: _vinCtrl.text.trim().isEmpty
+          ? null
+          : _vinCtrl.text.trim().toUpperCase(),
+      inspectionScore: double.tryParse(_scoreCtrl.text.trim()),
+      inspectionDetails: {
+        if (double.tryParse(_engineCtrl.text.trim()) case final engine?)
+          'engine': engine,
+        if (double.tryParse(_suspensionCtrl.text.trim()) case final suspension?)
+          'suspension': suspension,
+        if (_bodyCondition != null) 'body': _bodyCondition,
+      },
     );
 
+    // Fields the dealer emptied while editing must be sent as NULL.
+    final original = widget.carToEdit;
+    final clear = <String>{
+      if (original?.chassisNumber != null && car.chassisNumber == null)
+        'chassis_number',
+      if (original?.inspectionScore != null && car.inspectionScore == null)
+        'inspection_score',
+      if ((original?.inspectionDetails.isNotEmpty ?? false) &&
+          car.inspectionDetails.isEmpty)
+        'inspection_details',
+    };
+
     final result = _isEditMode
-        ? await notifier.updateCar(widget.carToEdit!.id, car)
+        ? await notifier.updateCar(widget.carToEdit!.id, car, clear: clear)
         : await notifier.createCar(car);
 
     if (result == null) return;
@@ -234,12 +316,16 @@ class _VehicleFormV2State extends ConsumerState<VehicleFormV2> {
               child: Row(
                 children: [
                   Expanded(
-                    child: Text(_isEditMode ? 'Edit Vehicle' : 'Add New Vehicle',
-                        style: AppTextStyles.heading2.copyWith(color: context.palette.textPrimary, fontSize: 19)),
+                    child: Text(
+                        _isEditMode ? 'Edit Vehicle' : 'Add New Vehicle',
+                        style: AppTextStyles.heading2.copyWith(
+                            color: context.palette.textPrimary, fontSize: 19)),
                   ),
                   IconButton(
-                    icon: Icon(Icons.close_rounded, color: context.palette.textTertiary, size: 20),
-                    onPressed: busy ? null : () => Navigator.of(context).pop(false),
+                    icon: Icon(Icons.close_rounded,
+                        color: context.palette.textTertiary, size: 20),
+                    onPressed:
+                        busy ? null : () => Navigator.of(context).pop(false),
                   ),
                 ],
               ),
@@ -250,40 +336,62 @@ class _VehicleFormV2State extends ConsumerState<VehicleFormV2> {
                 padding: const EdgeInsets.all(AppDimensions.paddingL),
                 child: Form(
                   key: _formKey,
-                  autovalidateMode: _submitted ? AutovalidateMode.onUserInteraction : AutovalidateMode.disabled,
+                  autovalidateMode: _submitted
+                      ? AutovalidateMode.onUserInteraction
+                      : AutovalidateMode.disabled,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      if (!_isEditMode) ...[
+                      ...[
                         Row(
                           children: [
                             Expanded(
                               child: _textField(
                                 controller: _vinCtrl,
-                                label: 'VIN (optional — auto-fills make/model/year)',
-                                maxLength: 17,
-                                validator: (v) => (v != null && v.isNotEmpty && v.length != 17) ? 'Must be 17 characters' : null,
+                                label:
+                                    'Chassis / VIN number (optional — a 17-char VIN can auto-fill make/model/year)',
+                                maxLength: 50,
+                                validator: _validateChassis,
                               ),
                             ),
-                            const SizedBox(width: 10),
-                            SizedBox(
-                              height: 44,
-                              child: ElevatedButton(
-                                onPressed: formState.isDecodingVin ? null : _decodeVin,
-                                style: ElevatedButton.styleFrom(backgroundColor: context.palette.accent, foregroundColor: context.palette.onAccent),
-                                child: formState.isDecodingVin
-                                    ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2))
-                                    : const Text('Decode'),
+                            if (!_isEditMode) ...[
+                              const SizedBox(width: 10),
+                              SizedBox(
+                                height: 44,
+                                child: ElevatedButton(
+                                  onPressed: formState.isDecodingVin
+                                      ? null
+                                      : _decodeVin,
+                                  style: ElevatedButton.styleFrom(
+                                      backgroundColor: context.palette.accent,
+                                      foregroundColor:
+                                          context.palette.onAccent),
+                                  child: formState.isDecodingVin
+                                      ? const SizedBox(
+                                          width: 14,
+                                          height: 14,
+                                          child: CircularProgressIndicator(
+                                              strokeWidth: 2))
+                                      : const Text('Decode'),
+                                ),
                               ),
-                            ),
+                            ],
                           ],
                         ),
                         const SizedBox(height: AppDimensions.paddingM),
                       ],
                       Row(children: [
-                        Expanded(child: _textField(controller: _makeCtrl, label: 'Make', validator: _required)),
+                        Expanded(
+                            child: _textField(
+                                controller: _makeCtrl,
+                                label: 'Make',
+                                validator: _required)),
                         const SizedBox(width: 12),
-                        Expanded(child: _textField(controller: _modelCtrl, label: 'Model', validator: _required)),
+                        Expanded(
+                            child: _textField(
+                                controller: _modelCtrl,
+                                label: 'Model',
+                                validator: _required)),
                       ]),
                       const SizedBox(height: AppDimensions.paddingM),
                       Row(children: [
@@ -292,17 +400,22 @@ class _VehicleFormV2State extends ConsumerState<VehicleFormV2> {
                             controller: _yearCtrl,
                             label: 'Year',
                             keyboardType: TextInputType.number,
-                            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                            inputFormatters: [
+                              FilteringTextInputFormatter.digitsOnly
+                            ],
                             validator: (v) {
                               final year = int.tryParse(v ?? '');
                               if (year == null) return 'Enter a valid year';
-                              if (year < 1980 || year > 2030) return '1980–2030 only';
+                              if (year < 1980 || year > 2030)
+                                return '1980–2030 only';
                               return null;
                             },
                           ),
                         ),
                         const SizedBox(width: 12),
-                        Expanded(child: _textField(controller: _colorCtrl, label: 'Color')),
+                        Expanded(
+                            child: _textField(
+                                controller: _colorCtrl, label: 'Color')),
                       ]),
                       const SizedBox(height: AppDimensions.paddingM),
                       Row(children: [
@@ -311,7 +424,10 @@ class _VehicleFormV2State extends ConsumerState<VehicleFormV2> {
                             controller: _mileageCtrl,
                             label: 'Mileage (km)',
                             keyboardType: TextInputType.number,
-                            inputFormatters: [_NonNegativeFormatter(), _ThousandsFormatter()],
+                            inputFormatters: [
+                              _NonNegativeFormatter(),
+                              _ThousandsFormatter()
+                            ],
                             validator: (v) {
                               final m = _parseThousands(v ?? '');
                               if (m == null) return 'Enter a valid number';
@@ -326,7 +442,10 @@ class _VehicleFormV2State extends ConsumerState<VehicleFormV2> {
                             controller: _priceCtrl,
                             label: 'Sale Price (PKR)',
                             keyboardType: TextInputType.number,
-                            inputFormatters: [_NonNegativeFormatter(), _ThousandsFormatter()],
+                            inputFormatters: [
+                              _NonNegativeFormatter(),
+                              _ThousandsFormatter()
+                            ],
                             validator: (v) {
                               final p = _parseThousands(v ?? '');
                               if (p == null) return 'Enter a valid price';
@@ -343,11 +462,15 @@ class _VehicleFormV2State extends ConsumerState<VehicleFormV2> {
                             controller: _purchasePriceCtrl,
                             label: 'Purchase Price — staff only (PKR)',
                             keyboardType: TextInputType.number,
-                            inputFormatters: [_NonNegativeFormatter(), _ThousandsFormatter()],
+                            inputFormatters: [
+                              _NonNegativeFormatter(),
+                              _ThousandsFormatter()
+                            ],
                             validator: (v) {
                               if (v == null || v.isEmpty) return null;
                               final p = _parseThousands(v);
-                              if (p != null && p < 0) return 'Cannot be negative';
+                              if (p != null && p < 0)
+                                return 'Cannot be negative';
                               return null;
                             },
                           ),
@@ -358,11 +481,15 @@ class _VehicleFormV2State extends ConsumerState<VehicleFormV2> {
                             controller: _retailPriceCtrl,
                             label: 'Listed Retail Price (PKR)',
                             keyboardType: TextInputType.number,
-                            inputFormatters: [_NonNegativeFormatter(), _ThousandsFormatter()],
+                            inputFormatters: [
+                              _NonNegativeFormatter(),
+                              _ThousandsFormatter()
+                            ],
                             validator: (v) {
                               if (v == null || v.isEmpty) return null;
                               final p = _parseThousands(v);
-                              if (p != null && p < 0) return 'Cannot be negative';
+                              if (p != null && p < 0)
+                                return 'Cannot be negative';
                               return null;
                             },
                           ),
@@ -370,47 +497,121 @@ class _VehicleFormV2State extends ConsumerState<VehicleFormV2> {
                       ]),
                       const SizedBox(height: AppDimensions.paddingM),
                       Row(children: [
-                        Expanded(child: _dropdown('Status', _status, _statuses, (v) => setState(() => _status = v))),
+                        Expanded(
+                            child: _dropdown('Status', _status, _statuses,
+                                (v) => setState(() => _status = v))),
                         const SizedBox(width: 12),
-                        Expanded(child: _dropdown('Condition', _condition, _conditions, (v) => setState(() => _condition = v))),
+                        Expanded(
+                            child: _dropdown(
+                                'Condition',
+                                _condition,
+                                _conditions,
+                                (v) => setState(() => _condition = v))),
                       ]),
                       const SizedBox(height: AppDimensions.paddingM),
                       Row(children: [
-                        Expanded(child: _dropdown('Fuel Type', _fuelType, _fuelTypes, (v) => setState(() => _fuelType = v))),
+                        Expanded(
+                            child: _dropdown('Fuel Type', _fuelType, _fuelTypes,
+                                (v) => setState(() => _fuelType = v))),
                         const SizedBox(width: 12),
-                        Expanded(child: _dropdown('Transmission', _transmission, _transmissions, (v) => setState(() => _transmission = v))),
+                        Expanded(
+                            child: _dropdown(
+                                'Transmission',
+                                _transmission,
+                                _transmissions,
+                                (v) => setState(() => _transmission = v))),
                       ]),
                       const SizedBox(height: AppDimensions.paddingM),
-                      _textField(controller: _featuresCtrl, label: 'Features (comma-separated)'),
+                      _sectionLabel('Inspection (optional)'),
+                      const SizedBox(height: 8),
+                      Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                                child: _textField(
+                                    controller: _scoreCtrl,
+                                    label: 'Overall score (0–10)',
+                                    keyboardType:
+                                        const TextInputType.numberWithOptions(
+                                            decimal: true),
+                                    validator: _validateScore)),
+                            const SizedBox(width: 12),
+                            Expanded(
+                                child: _textField(
+                                    controller: _engineCtrl,
+                                    label: 'Engine (0–10)',
+                                    keyboardType:
+                                        const TextInputType.numberWithOptions(
+                                            decimal: true),
+                                    validator: _validateScore)),
+                            const SizedBox(width: 12),
+                            Expanded(
+                                child: _textField(
+                                    controller: _suspensionCtrl,
+                                    label: 'Suspension (0–10)',
+                                    keyboardType:
+                                        const TextInputType.numberWithOptions(
+                                            decimal: true),
+                                    validator: _validateScore)),
+                          ]),
                       const SizedBox(height: AppDimensions.paddingM),
-                      _textField(controller: _descriptionCtrl, label: 'Description (shown to customers)', maxLines: 4, maxLength: 2000),
+                      _optionalDropdown(
+                          'Body condition',
+                          _bodyCondition,
+                          _bodyConditions,
+                          (v) => setState(() => _bodyCondition = v)),
                       const SizedBox(height: AppDimensions.paddingM),
-                      _textField(controller: _notesCtrl, label: 'Reconditioning Notes (internal)', maxLines: 3),
+                      _textField(
+                          controller: _featuresCtrl,
+                          label: 'Features (comma-separated)'),
+                      const SizedBox(height: AppDimensions.paddingM),
+                      _textField(
+                          controller: _descriptionCtrl,
+                          label: 'Description (shown to customers)',
+                          maxLines: 4,
+                          maxLength: 2000),
+                      const SizedBox(height: AppDimensions.paddingM),
+                      _textField(
+                          controller: _notesCtrl,
+                          label: 'Reconditioning Notes (internal)',
+                          maxLines: 3),
                       const SizedBox(height: AppDimensions.paddingM),
                       SwitchListTile(
                         contentPadding: EdgeInsets.zero,
                         value: _isPublic,
                         onChanged: (v) => setState(() => _isPublic = v),
                         activeThumbColor: context.palette.accent,
-                        title: Text('Visible in customer app', style: AppTextStyles.body.copyWith(color: context.palette.textPrimary, fontSize: 13)),
+                        title: Text('Visible in customer app',
+                            style: AppTextStyles.body.copyWith(
+                                color: context.palette.textPrimary,
+                                fontSize: 13)),
                       ),
                       const SizedBox(height: AppDimensions.paddingM),
                       OutlinedButton.icon(
                         onPressed: _pickPhotos,
-                        icon: const Icon(Icons.add_photo_alternate_outlined, size: 18),
-                        label: Text('Add Photos (${_pendingPhotos.length} selected)'),
-                        style: OutlinedButton.styleFrom(side: BorderSide(color: context.palette.border)),
+                        icon: const Icon(Icons.add_photo_alternate_outlined,
+                            size: 18),
+                        label: Text(
+                            'Add Photos (${_pendingPhotos.length} selected)'),
+                        style: OutlinedButton.styleFrom(
+                            side: BorderSide(color: context.palette.border)),
                       ),
                       if (formState.errorMessage != null) ...[
                         const SizedBox(height: AppDimensions.paddingM),
                         Container(
                           padding: const EdgeInsets.all(AppDimensions.paddingM),
                           decoration: BoxDecoration(
-                            color: context.palette.error.withValues(alpha: 0.08),
-                            borderRadius: BorderRadius.circular(AppDimensions.radiusS),
-                            border: Border.all(color: context.palette.error.withValues(alpha: 0.3)),
+                            color:
+                                context.palette.error.withValues(alpha: 0.08),
+                            borderRadius:
+                                BorderRadius.circular(AppDimensions.radiusS),
+                            border: Border.all(
+                                color: context.palette.error
+                                    .withValues(alpha: 0.3)),
                           ),
-                          child: Text(formState.errorMessage!, style: AppTextStyles.caption.copyWith(color: context.palette.error)),
+                          child: Text(formState.errorMessage!,
+                              style: AppTextStyles.caption
+                                  .copyWith(color: context.palette.error)),
                         ),
                       ],
                     ],
@@ -424,15 +625,23 @@ class _VehicleFormV2State extends ConsumerState<VehicleFormV2> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  TextButton(onPressed: busy ? null : () => Navigator.of(context).pop(false), child: const Text('Cancel')),
+                  TextButton(
+                      onPressed:
+                          busy ? null : () => Navigator.of(context).pop(false),
+                      child: const Text('Cancel')),
                   const SizedBox(width: 8),
                   SizedBox(
                     height: 42,
                     child: ElevatedButton(
                       onPressed: busy ? null : _handleSubmit,
-                      style: ElevatedButton.styleFrom(backgroundColor: context.palette.accent, foregroundColor: context.palette.onAccent),
+                      style: ElevatedButton.styleFrom(
+                          backgroundColor: context.palette.accent,
+                          foregroundColor: context.palette.onAccent),
                       child: busy
-                          ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(strokeWidth: 2))
                           : Text(_isEditMode ? 'Save Changes' : 'Add Vehicle'),
                     ),
                   ),
@@ -445,7 +654,74 @@ class _VehicleFormV2State extends ConsumerState<VehicleFormV2> {
     );
   }
 
-  String? _required(String? v) => (v == null || v.trim().isEmpty) ? 'Required' : null;
+  String? _required(String? v) =>
+      (v == null || v.trim().isEmpty) ? 'Required' : null;
+
+  static const _bodyConditions = [
+    'Non-Accidental',
+    'Minor Touch-ups',
+    'Accidental'
+  ];
+
+  static String _detailScore(Object? v) =>
+      v is num ? v.toStringAsFixed(1) : (v?.toString() ?? '');
+
+  static String? _validateChassis(String? v) {
+    final t = v?.trim() ?? '';
+    if (t.isEmpty) return null;
+    return RegExp(r'^[A-Za-z0-9\-]{5,50}$').hasMatch(t)
+        ? null
+        : 'Letters, digits and "-" only (5–50 characters)';
+  }
+
+  static String? _validateScore(String? v) {
+    final t = v?.trim() ?? '';
+    if (t.isEmpty) return null;
+    final n = double.tryParse(t);
+    if (n == null || n < 0 || n > 10) return '0 to 10';
+    if (RegExp(r'\.\d{2,}$').hasMatch(t)) return 'One decimal max';
+    return null;
+  }
+
+  Widget _sectionLabel(String text) => Text(text,
+      style: AppTextStyles.caption.copyWith(
+          color: context.palette.textSecondary,
+          fontSize: 11,
+          fontWeight: FontWeight.w700));
+
+  Widget _optionalDropdown(String label, String? value, List<String> items,
+      ValueChanged<String?> onChanged) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label,
+            style: AppTextStyles.caption
+                .copyWith(color: context.palette.textSecondary, fontSize: 11)),
+        const SizedBox(height: 6),
+        DropdownButtonFormField<String?>(
+          initialValue: items.contains(value) ? value : null,
+          isExpanded: true,
+          dropdownColor: context.palette.card,
+          style: AppTextStyles.body
+              .copyWith(color: context.palette.textPrimary, fontSize: 13),
+          decoration: InputDecoration(
+            filled: true,
+            fillColor: context.palette.surface,
+            border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(AppDimensions.radiusS),
+                borderSide: BorderSide(color: context.palette.border)),
+          ),
+          items: [
+            const DropdownMenuItem<String?>(
+                value: null, child: Text('Not specified')),
+            for (final item in items)
+              DropdownMenuItem<String?>(value: item, child: Text(item)),
+          ],
+          onChanged: onChanged,
+        ),
+      ],
+    );
+  }
 
   Widget _textField({
     required TextEditingController controller,
@@ -459,7 +735,9 @@ class _VehicleFormV2State extends ConsumerState<VehicleFormV2> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: AppTextStyles.caption.copyWith(color: context.palette.textSecondary, fontSize: 11)),
+        Text(label,
+            style: AppTextStyles.caption
+                .copyWith(color: context.palette.textSecondary, fontSize: 11)),
         const SizedBox(height: 6),
         TextFormField(
           controller: controller,
@@ -468,23 +746,29 @@ class _VehicleFormV2State extends ConsumerState<VehicleFormV2> {
           maxLength: maxLength,
           inputFormatters: inputFormatters,
           validator: validator,
-          style: AppTextStyles.body.copyWith(color: context.palette.textPrimary, fontSize: 13),
+          style: AppTextStyles.body
+              .copyWith(color: context.palette.textPrimary, fontSize: 13),
           decoration: InputDecoration(
             filled: true,
             fillColor: context.palette.surface,
             counterText: '',
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppDimensions.radiusS), borderSide: BorderSide(color: context.palette.border)),
+            border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(AppDimensions.radiusS),
+                borderSide: BorderSide(color: context.palette.border)),
           ),
         ),
       ],
     );
   }
 
-  Widget _dropdown(String label, String? value, List<String> items, ValueChanged<String?> onChanged) {
+  Widget _dropdown(String label, String? value, List<String> items,
+      ValueChanged<String?> onChanged) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: AppTextStyles.caption.copyWith(color: context.palette.textSecondary, fontSize: 11)),
+        Text(label,
+            style: AppTextStyles.caption
+                .copyWith(color: context.palette.textSecondary, fontSize: 11)),
         const SizedBox(height: 6),
         DropdownButtonFormField<String>(
           // `initialValue` is guaranteed to be either null or a member of
@@ -493,14 +777,20 @@ class _VehicleFormV2State extends ConsumerState<VehicleFormV2> {
           initialValue: value != null && items.contains(value) ? value : null,
           isExpanded: true,
           dropdownColor: context.palette.card,
-          style: AppTextStyles.body.copyWith(color: context.palette.textPrimary, fontSize: 13),
+          style: AppTextStyles.body
+              .copyWith(color: context.palette.textPrimary, fontSize: 13),
           validator: (v) => v == null ? 'Required' : null,
           decoration: InputDecoration(
             filled: true,
             fillColor: context.palette.surface,
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppDimensions.radiusS), borderSide: BorderSide(color: context.palette.border)),
+            border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(AppDimensions.radiusS),
+                borderSide: BorderSide(color: context.palette.border)),
           ),
-          items: items.map((item) => DropdownMenuItem(value: item, child: Text(_titleCase(item)))).toList(),
+          items: items
+              .map((item) =>
+                  DropdownMenuItem(value: item, child: Text(_titleCase(item))))
+              .toList(),
           onChanged: onChanged,
         ),
       ],

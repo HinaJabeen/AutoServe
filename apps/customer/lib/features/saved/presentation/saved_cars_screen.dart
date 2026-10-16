@@ -5,7 +5,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared/shared.dart';
 
+import '../../../core/theme/app_theme.dart';
+
 import '../../../core/router/app_router.dart';
+import '../../../core/widgets/inspection_badge.dart';
+import '../../compare/presentation/compare_widgets.dart';
 import '../../leads/presentation/lead_inquiry_bottom_sheet.dart';
 import '../../leads/services/lead_service.dart';
 import '../providers/saved_cars_providers.dart';
@@ -36,7 +40,9 @@ class SavedCarsScreen extends ConsumerWidget {
                   onRefresh: () => ref.refresh(savedCarsProvider.future),
                   child: Center(
                     child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: _kSavedMaxWidth),
+                      constraints: const BoxConstraints(
+                        maxWidth: _kSavedMaxWidth,
+                      ),
                       child: ListView.separated(
                         physics: const AlwaysScrollableScrollPhysics(),
                         padding: const EdgeInsets.all(AppDimensions.paddingM),
@@ -68,19 +74,21 @@ class _SavedCarTile extends ConsumerWidget {
     notifier.remove(car.id);
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(
-        content: Text('Removed ${car.displayTitle}'),
-        action: SnackBarAction(
-          label: 'Undo',
-          onPressed: () => notifier.restore(car, index),
+      ..showSnackBar(
+        SnackBar(
+          content: Text('Removed ${car.displayTitle}'),
+          action: SnackBarAction(
+            label: 'Undo',
+            onPressed: () => notifier.restore(car, index),
+          ),
         ),
-      ));
+      );
   }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final p = context.palette;
-    final radius = BorderRadius.circular(AppDimensions.radiusL);
+    final radius = BorderRadius.circular(AppRadii.glass);
 
     return Dismissible(
       key: ValueKey('dismiss-${car.id}'),
@@ -95,65 +103,105 @@ class _SavedCarTile extends ConsumerWidget {
         ),
         child: Icon(Icons.delete_outline_rounded, color: p.error),
       ),
-      child: Material(
-        color: p.card,
-        shape: RoundedRectangleBorder(
+      child: DecoratedBox(
+        decoration: BoxDecoration(
           borderRadius: radius,
-          side: BorderSide(color: p.border),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x150C3B2E),
+              blurRadius: 24,
+              offset: Offset(0, 10),
+            ),
+          ],
         ),
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          onTap: () => context.push(AppRoutes.vehicleDetailPath(car.id), extra: car),
-          child: Padding(
-            padding: const EdgeInsets.all(AppDimensions.paddingS),
-            child: Row(
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(AppDimensions.radiusM),
-                  child: SizedBox(
-                    width: 104,
-                    height: 84,
-                    child: CarNetworkImage(url: car.photoUrls.firstOrNull, iconSize: 24),
+        child: Material(
+          color: p.card,
+          shape: RoundedRectangleBorder(
+            borderRadius: radius,
+            side: BorderSide(color: p.borderSubtle),
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            onTap: () =>
+                context.push(AppRoutes.vehicleDetailPath(car.id), extra: car),
+            child: Padding(
+              padding: const EdgeInsets.all(AppDimensions.paddingS),
+              child: Row(
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(AppDimensions.radiusM),
+                    child: SizedBox(
+                      width: 104,
+                      height: 84,
+                      child: CarNetworkImage(
+                        url: car.photoUrls.firstOrNull,
+                        iconSize: 24,
+                      ),
+                    ),
                   ),
-                ),
-                const SizedBox(width: AppDimensions.paddingM),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(car.displayTitle,
+                  const SizedBox(width: AppDimensions.paddingM),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          car.displayTitle,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: AppTextStyles.bodyBold.copyWith(color: p.textPrimary)),
-                      const SizedBox(height: 2),
-                      Text(car.formattedPrice,
-                          style: AppTextStyles.bodyBold.copyWith(color: p.accentSecondary)),
-                      const SizedBox(height: AppDimensions.paddingS),
-                      SizedBox(
-                        height: 32,
-                        child: OutlinedButton.icon(
-                          onPressed: () => showLeadInquiryBottomSheet(
-                              context, car: car, type: LeadType.inquiry),
-                          icon: Icon(Icons.chat_bubble_outline_rounded,
-                              size: 16, color: p.accentSecondary),
-                          label: Text('Inquire',
-                              style: AppTextStyles.caption.copyWith(
-                                  color: p.accentSecondary, fontWeight: FontWeight.w600)),
-                          style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(horizontal: AppDimensions.paddingM),
-                            side: BorderSide(color: p.accentSecondary),
+                          style: AppTextStyles.bodyBold.copyWith(
+                            color: p.textPrimary,
+                            fontWeight: FontWeight.w800,
                           ),
                         ),
-                      ),
-                    ],
+                        const SizedBox(height: 2),
+                        Text(
+                          car.formattedPrice,
+                          style: AppType.price(p, size: 15),
+                        ),
+                        if (car.isInspected) ...[
+                          const SizedBox(height: 4),
+                          InspectionBadge(car: car, compact: true),
+                        ],
+                        const SizedBox(height: AppDimensions.paddingS),
+                        SizedBox(
+                          height: 32,
+                          child: OutlinedButton.icon(
+                            onPressed: () => showLeadInquiryBottomSheet(
+                              context,
+                              car: car,
+                              type: LeadType.inquiry,
+                            ),
+                            icon: Icon(
+                              Icons.chat_bubble_outline_rounded,
+                              size: 16,
+                              color: p.accentSecondary,
+                            ),
+                            label: Text(
+                              'Inquire',
+                              style: AppTextStyles.caption.copyWith(
+                                color: p.accentSecondary,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: AppDimensions.paddingM,
+                              ),
+                              side: BorderSide(color: p.accentSecondary),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                IconButton(
-                  tooltip: 'Remove from saved',
-                  icon: Icon(Icons.favorite_rounded, color: p.accent),
-                  onPressed: () => _remove(context, ref),
-                ),
-              ],
+                  CompareToggleButton(car: car),
+                  IconButton(
+                    tooltip: 'Remove from saved',
+                    icon: Icon(Icons.favorite_rounded, color: p.accent),
+                    onPressed: () => _remove(context, ref),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -181,22 +229,32 @@ class _EmptySaved extends StatelessWidget {
                 color: p.accent.withValues(alpha: 0.12),
                 shape: BoxShape.circle,
               ),
-              child: Icon(Icons.favorite_border_rounded, size: 44, color: p.accent),
+              child: Icon(
+                Icons.favorite_border_rounded,
+                size: 44,
+                color: p.accent,
+              ),
             ),
             const SizedBox(height: AppDimensions.paddingL),
-            Text('No saved cars yet',
-                style: AppTextStyles.heading2.copyWith(color: p.textPrimary),
-                textAlign: TextAlign.center),
+            Text(
+              'No saved cars yet',
+              style: AppTextStyles.heading2.copyWith(color: p.textPrimary),
+              textAlign: TextAlign.center,
+            ),
             const SizedBox(height: AppDimensions.paddingS),
-            Text('Swipe right on listings to save them here.',
-                style: AppTextStyles.body.copyWith(color: p.textSecondary),
-                textAlign: TextAlign.center),
+            Text(
+              'Swipe right on listings to save them here.',
+              style: AppTextStyles.body.copyWith(color: p.textSecondary),
+              textAlign: TextAlign.center,
+            ),
             const SizedBox(height: AppDimensions.paddingL),
             ElevatedButton.icon(
               onPressed: () => context.go(AppRoutes.deck),
               icon: Icon(Icons.explore_outlined, size: 18, color: p.onAccent),
-              label: Text('Explore cars',
-                  style: AppTextStyles.button.copyWith(color: p.onAccent)),
+              label: Text(
+                'Explore cars',
+                style: AppTextStyles.button.copyWith(color: p.onAccent),
+              ),
             ),
           ],
         ),
@@ -221,9 +279,11 @@ class _SavedError extends StatelessWidget {
           children: [
             Icon(Icons.error_outline_rounded, size: 48, color: p.error),
             const SizedBox(height: AppDimensions.paddingM),
-            Text(message,
-                style: AppTextStyles.body.copyWith(color: p.textPrimary),
-                textAlign: TextAlign.center),
+            Text(
+              message,
+              style: AppTextStyles.body.copyWith(color: p.textPrimary),
+              textAlign: TextAlign.center,
+            ),
             const SizedBox(height: AppDimensions.paddingM),
             TextButton(onPressed: onRetry, child: const Text('Retry')),
           ],

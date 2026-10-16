@@ -3,6 +3,22 @@
 import 'package:flutter/material.dart';
 import 'package:shared/shared.dart';
 
+import '../../../../core/theme/app_theme.dart';
+import '../../../../core/widgets/glass_container.dart';
+import '../../../../core/widgets/inspection_badge.dart';
+
+/// Pine @ 55% — the frosted info panel over the photo. Darker than the
+/// palette's glassFill so white text stays legible on any image.
+const _photoGlass = Color(0x8C0C3B2E);
+
+String _titleCase(String s) => s
+    .split('_')
+    .map((w) => w.isEmpty ? w : '${w[0].toUpperCase()}${w.substring(1)}')
+    .join(' ');
+
+String _km(int km) =>
+    '${km.toString().replaceAllMapped(RegExp(r'(\d)(?=(\d{3})+(?!\d))'), (m) => '${m[1]},')} km';
+
 class CarSwipeCard extends StatelessWidget {
   const CarSwipeCard({
     super.key,
@@ -28,111 +44,122 @@ class CarSwipeCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final p = context.palette;
     final photoUrl = car.photoUrls.isNotEmpty ? car.photoUrls.first : null;
 
     final likeOpacity = (horizontalPercent / 100).clamp(0.0, 1.0);
     final passOpacity = (-horizontalPercent / 100).clamp(0.0, 1.0);
     final bookOpacity = (-verticalPercent / 100).clamp(0.0, 1.0);
+    final radius = BorderRadius.circular(AppRadii.card);
 
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: onTap,
       child: Container(
-      // Soft drop-shadow so the top card visibly lifts off the stack behind
-      // it, instead of the deck reading as flat, stacked rectangles.
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(AppDimensions.radiusL),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.18),
-            blurRadius: 24,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(AppDimensions.radiusL),
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            // Edge-to-edge vehicle image — falls back to a neutral placeholder
-            // if the car has no photos yet.
-            CarNetworkImage(url: photoUrl, iconSize: 64),
+        // Layered, pine-tinted shadows lift the top card off the stack.
+        decoration: BoxDecoration(
+          borderRadius: radius,
+          boxShadow: const [
+            BoxShadow(color: Color(0x150C3B2E), blurRadius: 24, offset: Offset(0, 10)),
+            BoxShadow(color: Color(0x0D0C3B2E), blurRadius: 6, offset: Offset(0, 2)),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: radius,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              // Edge-to-edge vehicle image — falls back to a neutral placeholder
+              // if the car has no photos yet.
+              CarNetworkImage(url: photoUrl, iconSize: 64),
 
-            // Bottom gradient so the spec overlay stays legible over any photo.
-            const Positioned(
-              left: 0, right: 0, bottom: 0,
-              child: SizedBox(
-                height: 180,
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [Colors.transparent, Colors.black87],
+              // Soft bottom vignette under the glass panel.
+              const Positioned(
+                left: 0, right: 0, bottom: 0,
+                child: IgnorePointer(
+                  child: SizedBox(
+                    height: 160,
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [Colors.transparent, Color(0x66000000)],
+                        ),
+                      ),
                     ),
                   ),
                 ),
               ),
-            ),
 
-            Positioned(
-              left: AppDimensions.paddingL,
-              right: AppDimensions.paddingL,
-              bottom: AppDimensions.paddingL,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    car.displayTitle,
-                    style: AppTextStyles.heading1.copyWith(color: Colors.white),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    car.formattedPrice,
-                    style: AppTextStyles.heading3.copyWith(
-                        color: Colors.white.withValues(alpha: 0.92)),
-                  ),
-                  const SizedBox(height: AppDimensions.paddingS),
-                  Wrap(
-                    spacing: AppDimensions.paddingS,
-                    runSpacing: AppDimensions.paddingS,
+              if (car.isInspected)
+                Positioned(
+                  top: AppDimensions.paddingM,
+                  left: AppDimensions.paddingM,
+                  child: InspectionBadge(car: car, onDark: true),
+                ),
+
+              Positioned(
+                left: AppDimensions.paddingS,
+                right: AppDimensions.paddingS,
+                bottom: AppDimensions.paddingS,
+                child: GlassContainer(
+                  tint: _photoGlass,
+                  borderRadius: AppRadii.card - 6,
+                  padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      if (car.mileage != null)
-                        _SpecChip(icon: Icons.speed_rounded, label: '${car.mileage} km'),
-                      if (car.fuelType != null)
-                        _SpecChip(icon: Icons.local_gas_station_rounded, label: car.fuelType!),
-                      if (car.transmission != null)
-                        _SpecChip(icon: Icons.settings_rounded, label: car.transmission!),
+                      Text(
+                        car.displayTitle,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppType.title(p, size: 24, color: Colors.white),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(car.formattedPrice, style: AppType.price(p, size: 19, color: p.highlight)),
+                      const SizedBox(height: AppDimensions.paddingS),
+                      Wrap(
+                        spacing: AppDimensions.paddingS,
+                        runSpacing: AppDimensions.paddingS,
+                        children: [
+                          if (car.mileage != null)
+                            _SpecChip(icon: Icons.speed_rounded, label: _km(car.mileage!)),
+                          if (car.fuelType != null)
+                            _SpecChip(icon: Icons.local_gas_station_rounded, label: _titleCase(car.fuelType!)),
+                          if (car.transmission != null)
+                            _SpecChip(icon: Icons.settings_rounded, label: _titleCase(car.transmission!)),
+                        ],
+                      ),
                     ],
                   ),
-                ],
-              ),
-            ),
-
-            // Drag feedback stamps — fade/scale in proportionally to how far
-            // past the swipe threshold the drag has gone, in whichever
-            // direction(s) are active.
-            if (likeOpacity > 0)
-              Positioned(
-                top: 28, right: 20,
-                child: _Stamp(label: 'INTERESTED', color: AppColors.success, opacity: likeOpacity),
-              ),
-            if (passOpacity > 0)
-              Positioned(
-                top: 28, left: 20,
-                child: _Stamp(label: 'PASS', color: AppColors.textTertiary, opacity: passOpacity),
-              ),
-            if (bookOpacity > 0)
-              Positioned(
-                top: 28, left: 0, right: 0,
-                child: Center(
-                  child: _Stamp(label: 'TEST DRIVE', color: AppColors.secondary, opacity: bookOpacity),
                 ),
               ),
-          ],
+
+              // Drag feedback stamps — fade/scale in proportionally to how far
+              // past the swipe threshold the drag has gone, in whichever
+              // direction(s) are active.
+              if (likeOpacity > 0)
+                Positioned(
+                  top: 28, right: 20,
+                  child: _Stamp(label: 'INTERESTED', color: p.success, opacity: likeOpacity),
+                ),
+              if (passOpacity > 0)
+                Positioned(
+                  top: 28, left: 20,
+                  child: _Stamp(label: 'PASS', color: p.textTertiary, opacity: passOpacity),
+                ),
+              if (bookOpacity > 0)
+                Positioned(
+                  top: 28, left: 0, right: 0,
+                  child: Center(
+                    child: _Stamp(label: 'TEST DRIVE', color: p.warmAccent, opacity: bookOpacity),
+                  ),
+                ),
+            ],
+          ),
         ),
-      ),
       ),
     );
   }
@@ -150,15 +177,16 @@ class _Stamp extends StatelessWidget {
         child: Transform.scale(
           scale: 0.85 + (0.15 * opacity),
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: BoxDecoration(
               color: Colors.white.withValues(alpha: 0.92),
-              borderRadius: BorderRadius.circular(AppDimensions.radiusS),
+              borderRadius: BorderRadius.circular(AppDimensions.radiusFull),
               border: Border.all(color: color, width: 2.5),
             ),
             child: Text(
               label,
-              style: AppTextStyles.bodyBold.copyWith(color: color, letterSpacing: 1.1),
+              style: AppTextStyles.bodyBold.copyWith(
+                  color: color, letterSpacing: 1.4, fontWeight: FontWeight.w800),
             ),
           ),
         ),
@@ -176,6 +204,7 @@ class _SpecChip extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.white.withValues(alpha: 0.16),
           borderRadius: BorderRadius.circular(AppDimensions.radiusFull),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.22)),
         ),
         child: Row(mainAxisSize: MainAxisSize.min, children: [
           Icon(icon, size: 14, color: Colors.white),

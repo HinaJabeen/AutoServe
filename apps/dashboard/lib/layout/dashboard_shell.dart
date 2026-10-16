@@ -122,8 +122,6 @@ class _Sidebar extends ConsumerWidget {
                 _NavItem(icon: Icons.calendar_month_rounded,         label: 'Schedule',  route: AppRoutes.schedule,  active: loc == AppRoutes.schedule),
                 _NavItem(icon: Icons.person_outline_rounded,         label: 'Profile',   route: AppRoutes.profile,   active: loc == AppRoutes.profile),
                 _NavItem(icon: Icons.storefront_outlined,            label: 'Settings',  route: AppRoutes.settings,  active: loc == AppRoutes.settings),
-                if (ref.watch(authProvider.select((a) => a.isSuperAdmin)))
-                  _NavItem(icon: Icons.admin_panel_settings_outlined, label: 'Admin',   route: AppRoutes.admin,     active: false),
                 const Spacer(),
                 Divider(color: p.border, height: 1),
                 const _ThemeToggleTile(),

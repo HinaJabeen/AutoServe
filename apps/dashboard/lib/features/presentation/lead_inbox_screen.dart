@@ -24,6 +24,12 @@ String _timeAgo(DateTime dt) {
   return '${l.day}/${l.month}/${l.year}';
 }
 
+/// A lead still in the `new` stage a day after it arrived: nobody has
+/// contacted the customer. Moving it to any later stage clears this.
+bool isStaleLead(LeadModel lead, {DateTime? now}) =>
+    lead.status == 'new' &&
+    (now ?? DateTime.now()).difference(lead.createdAt.toLocal()).inHours >= 24;
+
 // DB stage values → display labels + column buckets
 class _Stage {
   const _Stage(this.key, this.label, this.icon);
@@ -427,12 +433,13 @@ class _LeadCard extends StatelessWidget {
     final vehicleTitle = vehicle?.displayTitle as String? ?? 'General inquiry';
     final price = vehicle?.price as double?;
 
+    final stale = isStaleLead(lead);
     final card = Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: p.card,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: p.border),
+        border: Border.all(color: stale ? p.error : p.border, width: stale ? 1.5 : 1),
         boxShadow: [
           BoxShadow(
             color: p.shadowColor.withValues(alpha: isDark ? 0.3 : 0.06),
@@ -473,6 +480,20 @@ class _LeadCard extends StatelessWidget {
                 style: AppTextStyles.caption.copyWith(
                     color: p.textMuted, fontSize: 10)),
           ]),
+          if (stale) ...[
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: p.error.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(color: p.error.withValues(alpha: 0.5)),
+              ),
+              child: Text('⚠️ Stale Lead (No contact in 24h)',
+                  style: AppTextStyles.caption.copyWith(
+                      color: p.error, fontSize: 10.5, fontWeight: FontWeight.w700)),
+            ),
+          ],
           const SizedBox(height: 8),
 
           // Vehicle pill

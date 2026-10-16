@@ -7,6 +7,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared/shared.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' show AuthChangeEvent, AuthState, User;
 
+import '../../compare/providers/compare_providers.dart';
+import '../../dealer_application/providers/dealer_application_providers.dart';
 import '../../saved/providers/saved_cars_providers.dart';
 import '../models/customer_profile.dart';
 import '../services/auth_service.dart';
@@ -238,7 +240,14 @@ class AuthNotifier extends StateNotifier<CustomerAuthState> {
           'Please contact AutoServe support.');
       return;
     }
-    if (!profile.isCustomer) {
+    // Dealers who registered through this app's "Become a dealer" flow keep
+    // customer-app access after approval (their profile shows the dealer
+    // status card). Staff accounts created on the dashboard are still
+    // turned away.
+    final selfRegisteredDealer = profile.role == ProfileRole.dealer &&
+        await _service.isSelfRegisteredDealer(user.id);
+
+    if (!profile.isCustomer && !selfRegisteredDealer) {
       await _deny(profile.role == ProfileRole.admin
           ? "This is an AutoServe admin account, so it can't be used in the "
               'customer app.'
@@ -294,6 +303,8 @@ class AuthNotifier extends StateNotifier<CustomerAuthState> {
   /// next on this device. Add any new per-user provider here.
   void _clearUserCaches() {
     _ref.invalidate(savedCarsProvider);
+    _ref.invalidate(myDealerApplicationProvider);
+    _ref.invalidate(compareProvider);
   }
 
   void clearMessages() {

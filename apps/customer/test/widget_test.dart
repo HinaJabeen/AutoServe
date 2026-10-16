@@ -1,4 +1,11 @@
 import 'package:customer/core/router/app_router.dart';
+import 'package:customer/core/cnic.dart';
+import 'package:customer/core/widgets/inspection_badge.dart';
+import 'package:customer/features/compare/presentation/compare_screen.dart';
+import 'package:customer/features/compare/providers/compare_providers.dart';
+import 'package:customer/features/dealer_application/models/dealer_application.dart';
+import 'package:customer/features/dealer_application/presentation/dealer_status_card.dart';
+import 'package:customer/features/dealer_application/providers/dealer_application_providers.dart';
 import 'package:customer/core/theme/app_theme.dart';
 import 'package:customer/core/validators.dart';
 import 'package:customer/features/auth/models/customer_profile.dart';
@@ -16,6 +23,7 @@ import 'package:customer/features/search/providers/search_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:shared/shared.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -44,6 +52,9 @@ CarModel _car({
 class _FailingAuthService implements AuthService {
   _FailingAuthService(this.error);
   final Object error;
+
+  @override
+  Future<bool> isSelfRegisteredDealer(String userId) async => false;
 
   @override
   User? get currentUser => null;
@@ -339,6 +350,187 @@ void main() {
     });
   });
 
+  group('Dealer application', () {
+    test('CNIC is auto-masked and validated', () {
+      expect(CnicInputFormatter.format('3520212345671'), '35202-1234567-1');
+      expect(CnicInputFormatter.format('35202 1234'), '35202-1234');
+      expect(CnicInputFormatter.format('35202123456719999'), '35202-1234567-1');
+      expect(validateCnic('35202-1234567-1'), isNull);
+      expect(validateCnic('35202-123456-1'), isNotNull);
+      expect(validateCnic(''), isNotNull);
+    });
+
+    test('a pending application with its private verification row parses', () {
+      final app = DealerApplication.fromRow({
+        'id': 'd1', 'name': 'Capital Motors', 'city': 'Islamabad', 'status': 'rejected',
+        'contact_phone': '+923001234567', 'rejection_reason': 'Unclear facade photo',
+        'submitted_at': '2026-10-15T09:00:00Z',
+        'dealer_verifications': {
+          'owner_full_name': 'Hina Jabeen', 'owner_cnic': '35202-1234567-1',
+          'cnic_front_url': 'u1/cnic_front_1.jpg',
+          'initial_inventory_info': {'expected_stock_size': '10-30', 'primary_makes': ['Toyota']},
+        },
+      });
+      expect(app.status, ApplicationStatus.rejected);
+      expect(app.rejectionReason, 'Unclear facade photo');
+      expect(app.ownerCnic, '35202-1234567-1');
+      expect(app.cnicFrontPath, 'u1/cnic_front_1.jpg');
+      expect(app.inventoryInfo['primary_makes'], ['Toyota']);
+    });
+
+    test('submit params match the RPC and omit an empty sample vehicle', () {
+      const draft = DealerApplicationDraft(
+        ownerFullName: 'Hina Jabeen', ownerCnic: '35202-1234567-1', ownerPhone: '+923001234567',
+        showroomName: 'Capital Motors', city: 'Islamabad', address: 'Plot 4, Blue Area',
+        whatsapp: '+923001234567', businessHours: 'Mon-Sat 10-8', ntnNumber: '',
+        showroomPhotoPath: 'u/showroom.jpg', cnicFrontPath: 'u/f.jpg', cnicBackPath: 'u/b.jpg',
+        businessDocPath: 'u/doc.jpg', expectedStock: '10-30', primaryMakes: ['Toyota', 'Honda'],
+      );
+      final params = draft.toRpcParams();
+      expect(params.keys, containsAll(['p_showroom_name', 'p_owner_cnic', 'p_inventory_info']));
+      final inv = params['p_inventory_info']! as Map;
+      expect(inv['primary_makes'], ['Toyota', 'Honda']);
+      expect(inv.containsKey('sample_vehicle'), isFalse);
+    });
+
+    Future<void> pumpCard(WidgetTester tester, DealerApplication? app) async {
+      await tester.pumpWidget(ProviderScope(
+        // Fresh scope per state — a reused scope keeps its first override.
+        key: UniqueKey(),
+        overrides: [myDealerApplicationProvider.overrideWith((ref) async => app)],
+        child: MaterialApp(
+          theme: AppTheme.light(),
+          home: const Scaffold(body: SingleChildScrollView(child: DealerStatusCard())),
+        ),
+      ));
+      await tester.pumpAndSettle();
+    }
+
+    DealerApplication app(String status) => DealerApplication.fromRow({
+          'id': 'd1', 'name': 'Capital Motors', 'city': 'Islamabad', 'status': status,
+          'rejection_reason': 'Invalid CNIC',
+        });
+
+    testWidgets('profile card covers all four application states', (tester) async {
+      await pumpCard(tester, null);
+      expect(find.text('Register Dealership'), findsOneWidget);
+
+      await pumpCard(tester, app('pending'));
+      expect(find.text('Application Under Review'), findsOneWidget);
+
+      await pumpCard(tester, app('rejected'));
+      expect(find.text('Application Rejected'), findsOneWidget);
+      expect(find.text('Invalid CNIC'), findsOneWidget);
+      expect(find.text('Update & Resubmit'), findsOneWidget);
+
+      await pumpCard(tester, app('approved'));
+      expect(find.text('Verified Dealer'), findsOneWidget);
+      expect(find.text('Open Dealer Portal'), findsOneWidget);
+    });
+
+    test('portal URL falls back to the local dashboard when .env has none', () {
+      expect(dealerPortalUrl(), 'http://localhost:5000');
+    });
+  });
+
+  group('Comparison & inspection', () {
+    CarModel inspected(String id, {double? score, double price = 4500000}) => CarModel(
+          id: id, dealerId: 'd1', make: 'Toyota', model: 'Corolla $id', year: 2022,
+          price: price, status: 'available', createdAt: DateTime(2026), updatedAt: DateTime(2026),
+          inspectionScore: score,
+          inspectionDetails: score == null
+              ? const {}
+              : const {'engine': 9.0, 'suspension': 8.5, 'body': 'Non-Accidental'},
+        );
+
+    test('/compare is registered on the app router', () {
+      final container = ProviderContainer(overrides: [
+        authServiceProvider.overrideWithValue(_FailingAuthService(Exception('unused'))),
+      ]);
+      addTearDown(container.dispose);
+      final router = container.read(goRouterProvider);
+
+      List<String> paths(List<RouteBase> routes) => [
+            for (final r in routes) ...[
+              if (r is GoRoute) r.path,
+              ...paths(r.routes),
+            ],
+          ];
+      expect(paths(router.configuration.routes), contains(AppRoutes.compare));
+    });
+
+    testWidgets('compare screen opened directly still has a back button', (tester) async {
+      final container = ProviderContainer(overrides: [
+        compareDealersProvider.overrideWith((ref) async => const <String, DealershipModel>{}),
+      ]);
+      addTearDown(container.dispose);
+      await tester.pumpWidget(UncontrolledProviderScope(
+        container: container,
+        child: MaterialApp(theme: AppTheme.light(), home: const CompareScreen()),
+      ));
+      expect(find.byType(BackButton), findsOneWidget);
+    });
+
+    test('the compare tray holds at most 3 cars and toggles', () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      final tray = container.read(compareProvider.notifier);
+      expect(tray.toggle(inspected('a')), CompareToggleResult.added);
+      expect(tray.toggle(inspected('b')), CompareToggleResult.added);
+      expect(tray.toggle(inspected('c')), CompareToggleResult.added);
+      expect(tray.toggle(inspected('d')), CompareToggleResult.full);
+      expect(tray.toggle(inspected('b')), CompareToggleResult.removed);
+      expect(container.read(compareProvider).map((c) => c.id), ['a', 'c']);
+    });
+
+    testWidgets('badge and inspection report only for inspected cars', (tester) async {
+      await tester.pumpWidget(MaterialApp(
+        theme: AppTheme.light(),
+        home: Scaffold(
+          body: Column(children: [
+            InspectionBadge(car: inspected('x', score: 9.2)),
+            InspectionReport(car: inspected('x', score: 9.2)),
+            InspectionBadge(car: inspected('y')),
+          ]),
+        ),
+      ));
+      expect(find.text('AutoServe Inspected • 9.2/10'), findsOneWidget);
+      expect(find.text('Inspection Report'), findsOneWidget);
+
+      await tester.tap(find.text('Inspection Report'));
+      await tester.pumpAndSettle();
+      expect(find.text('Engine'), findsOneWidget);
+      expect(find.text('Suspension'), findsOneWidget);
+      expect(find.text('Non-Accidental'), findsOneWidget);
+    });
+
+    testWidgets('compare screen lays cars side by side and marks the cheapest', (tester) async {
+      await tester.binding.setSurfaceSize(const Size(420, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final container = ProviderContainer(overrides: [
+        compareDealersProvider.overrideWith((ref) async => const <String, DealershipModel>{}),
+      ]);
+      addTearDown(container.dispose);
+      container.read(compareProvider.notifier)
+        ..toggle(inspected('a', score: 9.2, price: 5000000))
+        ..toggle(inspected('b', price: 4200000));
+
+      await tester.pumpWidget(UncontrolledProviderScope(
+        container: container,
+        child: MaterialApp(theme: AppTheme.light(), home: const CompareScreen()),
+      ));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Compare (2/3)'), findsOneWidget);
+      expect(find.text('Toyota'), findsNWidgets(2));
+      expect(find.text('9.2 / 10'), findsOneWidget);
+      expect(find.text('Not inspected'), findsOneWidget);
+      // Best-value star on the cheaper car's price only.
+      expect(find.byIcon(Icons.star_rounded), findsOneWidget);
+      expect(find.text('WhatsApp'), findsNWidgets(2));
+    });
+  });
+
   group('VehicleFilters.copyWith', () {
     test('can clear a field, and keeps the dealer filter', () {
       const base = VehicleFilters(
@@ -379,9 +571,12 @@ void main() {
       await pumpDetail(tester, () async => VehicleDetail(car: _car(), dealer: dealer));
 
       expect(find.text('2022 Toyota Corolla').hitTestable(), findsOneWidget);
-      // A car with no spec data still gets the headline tiles, not a gap.
+      // A car with no spec data still gets the four headline spec tiles
+      // (showing "—"), not a gap.
       expect(find.text('Mileage'), findsOneWidget);
-      expect(find.text('Not specified'), findsNWidgets(5));
+      expect(find.text('Gearbox'), findsOneWidget);
+      expect(find.text('Fuel'), findsOneWidget);
+      expect(find.text('—'), findsNWidgets(4));
       await tester.ensureVisible(find.text('Emerald Motors'));
       await tester.pumpAndSettle();
       expect(find.text('Emerald Motors').hitTestable(), findsOneWidget);
@@ -401,12 +596,20 @@ void main() {
       await pumpDetail(tester, () async => VehicleDetail(car: _car(), dealer: open));
 
       expect(find.text('Mon–Sat 10am–8pm'), findsOneWidget);
-      expect(find.text('Contact Dealer via WhatsApp'), findsOneWidget);
+      // In the floating action bar; the short label fits phone width and the
+      // full wording is the tooltip / accessibility label.
+      expect(find.byTooltip('Contact Dealer via WhatsApp'), findsOneWidget);
+      expect(find.text('WhatsApp'), findsOneWidget);
+      // With WhatsApp in the bar, the inquiry form moves to the dealer card.
+      expect(find.text('Send an inquiry instead'), findsOneWidget);
+      expect(find.text('Send Inquiry'), findsNothing);
     });
 
     testWidgets('no WhatsApp button when the dealer phone is unusable', (tester) async {
       await pumpDetail(tester, () async => VehicleDetail(car: _car(), dealer: dealer));
-      expect(find.text('Contact Dealer via WhatsApp'), findsNothing);
+      expect(find.byTooltip('Contact Dealer via WhatsApp'), findsNothing);
+      // No usable number → the bar offers the inquiry form instead.
+      expect(find.text('Send Inquiry'), findsOneWidget);
     });
 
     testWidgets('a failed fetch shows the error and a retry', (tester) async {

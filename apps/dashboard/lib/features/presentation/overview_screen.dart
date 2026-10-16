@@ -10,6 +10,7 @@ import 'package:intl/intl.dart';
 import 'package:shared/shared.dart';
 import 'package:dashboard/theme/app_palette.dart';
 import '../providers/overview_provider.dart';
+import '../reports/export_report_menu.dart';
 
 class OverviewScreen extends ConsumerWidget {
   const OverviewScreen({super.key});
@@ -28,7 +29,13 @@ class OverviewScreen extends ConsumerWidget {
         children: [
           _StaggeredFadeIn(
             delay: Duration.zero,
-            child: _Header(dealerName: dealerName, palette: palette),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(child: _Header(dealerName: dealerName, palette: palette)),
+                const ExportReportMenu(),
+              ],
+            ),
           ),
           const SizedBox(height: AppDimensions.paddingXL),
           metricsAsync.when(

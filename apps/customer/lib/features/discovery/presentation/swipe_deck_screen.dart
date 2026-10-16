@@ -46,8 +46,8 @@ class SwipeDeckScreen extends ConsumerWidget {
                   top: 10, right: 10,
                   child: Container(
                     width: 8, height: 8,
-                    decoration: const BoxDecoration(
-                      color: AppColors.secondary,
+                    decoration: BoxDecoration(
+                      color: context.palette.highlight,
                       shape: BoxShape.circle,
                     ),
                   ),
@@ -177,16 +177,19 @@ class _Deck extends ConsumerWidget {
 class _SwipeHint extends StatelessWidget {
   const _SwipeHint();
   @override
-  Widget build(BuildContext context) => Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          _hint(Icons.close_rounded, 'Pass', AppColors.textTertiary),
-          const SizedBox(width: AppDimensions.paddingL),
-          _hint(Icons.directions_car_filled_rounded, 'Test drive', AppColors.secondary),
-          const SizedBox(width: AppDimensions.paddingL),
-          _hint(Icons.favorite_rounded, 'Interested', AppColors.success),
-        ],
-      );
+  Widget build(BuildContext context) {
+    final p = context.palette;
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        _hint(Icons.close_rounded, 'Pass', p.textTertiary),
+        const SizedBox(width: AppDimensions.paddingL),
+        _hint(Icons.directions_car_filled_rounded, 'Test drive', p.warmAccent),
+        const SizedBox(width: AppDimensions.paddingL),
+        _hint(Icons.favorite_rounded, 'Interested', p.success),
+      ],
+    );
+  }
 
   Widget _hint(IconData icon, String label, Color color) => Row(
         mainAxisSize: MainAxisSize.min,
@@ -211,19 +214,21 @@ class _EmptyDeck extends ConsumerWidget {
             children: [
               Icon(
                 filtersActive ? Icons.filter_alt_off_outlined : Icons.directions_car_outlined,
-                size: 56, color: AppColors.textTertiary,
+                size: 56, color: context.palette.textTertiary,
               ),
               const SizedBox(height: AppDimensions.paddingM),
               Text(
                 filtersActive ? 'No cars match your filters' : "You've seen every available car",
-                style: AppTextStyles.heading3, textAlign: TextAlign.center,
+                style: AppTextStyles.heading3.copyWith(color: context.palette.textPrimary),
+                textAlign: TextAlign.center,
               ),
               const SizedBox(height: AppDimensions.paddingS),
               Text(
                 filtersActive
                     ? 'Try widening your search criteria'
                     : 'Check back later for new listings',
-                style: AppTextStyles.caption, textAlign: TextAlign.center,
+                style: AppTextStyles.caption.copyWith(color: context.palette.textSecondary),
+                textAlign: TextAlign.center,
               ),
               if (filtersActive) ...[
                 const SizedBox(height: AppDimensions.paddingM),
@@ -250,11 +255,14 @@ class _ErrorState extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.error_outline_rounded, size: 48, color: AppColors.error),
+              Icon(Icons.error_outline_rounded, size: 48, color: context.palette.error),
               const SizedBox(height: AppDimensions.paddingM),
-              const Text('Could not load cars', style: AppTextStyles.heading3),
+              Text('Could not load cars',
+                  style: AppTextStyles.heading3.copyWith(color: context.palette.textPrimary)),
               const SizedBox(height: AppDimensions.paddingS),
-              Text(message, style: AppTextStyles.caption, textAlign: TextAlign.center),
+              Text(message,
+                  style: AppTextStyles.caption.copyWith(color: context.palette.textSecondary),
+                  textAlign: TextAlign.center),
               const SizedBox(height: AppDimensions.paddingM),
               TextButton(onPressed: onRetry, child: const Text('Retry')),
             ],

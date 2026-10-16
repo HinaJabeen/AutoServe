@@ -14,6 +14,7 @@ import 'package:shared/shared.dart';
 import '../../widgets/theme_toggle_button.dart';
 import '../providers/auth_provider.dart';
 import 'admin_providers.dart';
+import 'verification_desk.dart';
 
 class AdminPanelScreen extends ConsumerWidget {
   const AdminPanelScreen({super.key});
@@ -103,7 +104,7 @@ class _AdminPanel extends ConsumerWidget {
             const SizedBox(height: AppDimensions.paddingXL),
             Row(children: [
               Expanded(
-                child: Text('Dealerships',
+                child: Text('Dealership Applications',
                     style: AppTextStyles.heading2.copyWith(color: p.textPrimary, fontSize: 18)),
               ),
               ElevatedButton.icon(
@@ -116,11 +117,7 @@ class _AdminPanel extends ConsumerWidget {
               ),
             ]),
             const SizedBox(height: AppDimensions.paddingM),
-            if (summary.dealers.isEmpty)
-              Text('No dealerships yet.',
-                  style: AppTextStyles.body.copyWith(color: p.textSecondary))
-            else
-              for (final row in summary.dealers) _DealerTile(row: row),
+            VerificationDesk(summary: summary),
           ],
         ),
       ),
@@ -150,123 +147,6 @@ class _Stat extends StatelessWidget {
         const SizedBox(height: AppDimensions.paddingM),
         Text(value, style: AppTextStyles.heading1.copyWith(color: p.textPrimary, fontSize: 24)),
         Text(label, style: AppTextStyles.caption.copyWith(color: p.textTertiary)),
-      ]),
-    );
-  }
-}
-
-class _DealerTile extends ConsumerStatefulWidget {
-  const _DealerTile({required this.row});
-  final AdminDealerRow row;
-
-  @override
-  ConsumerState<_DealerTile> createState() => _DealerTileState();
-}
-
-class _DealerTileState extends ConsumerState<_DealerTile> {
-  bool _busy = false;
-
-  Future<void> _setStatus(String status) async {
-    final messenger = ScaffoldMessenger.of(context);
-    final errorColor = context.palette.error;
-    setState(() => _busy = true);
-    final error = await setDealerStatus(ref, widget.row.dealer.id, status);
-    if (!mounted) return;
-    setState(() => _busy = false);
-    messenger.showSnackBar(SnackBar(
-      content: Text(error ?? '${widget.row.dealer.name} is now $status'),
-      backgroundColor: error == null ? null : errorColor,
-    ));
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final p = context.palette;
-    final d = widget.row.dealer;
-    final statusColor = switch (d.status) {
-      'approved' => p.success,
-      'pending' => p.warning,
-      _ => p.error,
-    };
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: AppDimensions.paddingS),
-      padding: const EdgeInsets.all(AppDimensions.paddingM),
-      decoration: BoxDecoration(
-        color: p.card,
-        borderRadius: BorderRadius.circular(AppDimensions.radiusM),
-        border: Border.all(color: p.border),
-      ),
-      child: Row(children: [
-        Expanded(
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Row(children: [
-              Flexible(
-                child: Text(d.name,
-                    overflow: TextOverflow.ellipsis,
-                    style: AppTextStyles.bodyBold.copyWith(color: p.textPrimary)),
-              ),
-              const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(
-                  color: statusColor.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(d.status,
-                    style: AppTextStyles.caption.copyWith(
-                        color: statusColor, fontWeight: FontWeight.w600, fontSize: 11)),
-              ),
-            ]),
-            const SizedBox(height: 2),
-            Text([d.city, if (d.phone.isNotEmpty) d.phone, d.businessHours]
-                    .whereType<String>()
-                    .where((s) => s.trim().isNotEmpty)
-                    .join(' · '),
-                overflow: TextOverflow.ellipsis,
-                style: AppTextStyles.caption.copyWith(color: p.textSecondary)),
-          ]),
-        ),
-        _Count(icon: Icons.directions_car_outlined, value: widget.row.carCount, label: 'cars'),
-        _Count(icon: Icons.forum_outlined, value: widget.row.leadCount, label: 'leads'),
-        const SizedBox(width: AppDimensions.paddingS),
-        if (_busy)
-          const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2))
-        else if (d.status == 'approved')
-          OutlinedButton(
-            onPressed: () => _setStatus('suspended'),
-            style: OutlinedButton.styleFrom(
-                foregroundColor: p.error, side: BorderSide(color: p.error)),
-            child: const Text('Suspend'),
-          )
-        else
-          ElevatedButton(
-            onPressed: () => _setStatus('approved'),
-            style: ElevatedButton.styleFrom(
-                backgroundColor: p.accent, foregroundColor: p.onAccent),
-            child: Text(d.status == 'pending' ? 'Approve' : 'Reactivate'),
-          ),
-      ]),
-    );
-  }
-}
-
-class _Count extends StatelessWidget {
-  const _Count({required this.icon, required this.value, required this.label});
-  final IconData icon;
-  final int value;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    final p = context.palette;
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppDimensions.paddingM),
-      child: Row(mainAxisSize: MainAxisSize.min, children: [
-        Icon(icon, size: 16, color: p.textTertiary),
-        const SizedBox(width: 4),
-        Text('$value $label',
-            style: AppTextStyles.body.copyWith(color: p.textPrimary, fontSize: 13)),
       ]),
     );
   }

@@ -79,16 +79,19 @@ class InventoryService {
     }
   }
 
-  Future<CarModel> updateCar(String carId, CarModel car) async {
+  /// [clear] names columns to set to NULL — `toInsertJson` drops nulls, so
+  /// without this a field the dealer emptied would keep its old value.
+  Future<CarModel> updateCar(String carId, CarModel car, {Set<String> clear = const {}}) async {
     try {
       final row = await _client
           .from('cars')
-          .update(car.toInsertJson())
+          .update({...car.toInsertJson(), for (final k in clear) k: null})
           .eq('id', carId)
           .eq('dealer_id', _dealerId)
-          .select()
+          // Re-read with photos, or the edited card loses its image.
+          .select('*, car_photos(storage_path)')
           .single();
-      return CarModel.fromJson(row);
+      return _withPhotoUrls(row);
     } on PostgrestException catch (e) {
       throw InventoryException(_friendlyDbError(e));
     }
@@ -185,6 +188,10 @@ class InventoryService {
     // exactly which field was rejected.
     if (msg.contains('check constraint')) return 'Invalid value — ${e.message}';
     if (msg.contains('violates row-level security')) return 'Permission denied.';
+    if (e.code == '23505' && msg.contains('chassis')) {
+      return 'Another active listing on AutoServe already uses this chassis number. '
+          'Check the number, or mark the other listing sold first.';
+    }
     return 'Save failed: ${e.message}';
   }
 }

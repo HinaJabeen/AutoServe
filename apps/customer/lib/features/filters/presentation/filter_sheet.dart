@@ -9,6 +9,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared/shared.dart';
 
+import '../../../core/theme/app_theme.dart';
+
 import '../../discovery/providers/discovery_providers.dart';
 import '../models/vehicle_filters.dart';
 import '../providers/filter_providers.dart';
@@ -61,7 +63,7 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
         constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.85),
         decoration: BoxDecoration(
           color: p.card,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(AppDimensions.radiusL)),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(AppRadii.sheet)),
         ),
         child: carsAsync.when(
           loading: () => const SizedBox(
@@ -203,17 +205,18 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
           ),
 
           const SizedBox(height: AppDimensions.paddingL),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: () {
-                ref.read(vehicleFiltersProvider.notifier).apply(_draft);
-                Navigator.of(context).pop();
-              },
-              child: Text(
-                matchCount == 1 ? 'Show 1 car' : 'Show $matchCount cars',
-                style: AppTextStyles.button.copyWith(color: p.onAccent),
-              ),
+          // Full-width sage pill (StadiumBorder comes from the theme).
+          ElevatedButton.icon(
+            onPressed: () {
+              ref.read(vehicleFiltersProvider.notifier).apply(_draft);
+              Navigator.of(context).pop();
+            },
+            style: ElevatedButton.styleFrom(minimumSize: const Size.fromHeight(52)),
+            icon: Icon(Icons.search_rounded, size: 20, color: p.onAccent),
+            label: Text(
+              matchCount == 1 ? 'Show 1 car' : 'Show $matchCount cars',
+              style: AppTextStyles.button.copyWith(
+                  color: p.onAccent, fontSize: 16, fontWeight: FontWeight.w700),
             ),
           ),
         ],
